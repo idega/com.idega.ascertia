@@ -1,0 +1,15 @@
+<document>
+  <properties>
+    <title> changes</title>
+    <author email="eiki@idega.is">Eirikur S. Hrafnsson</author>
+  </properties>
+  <body>
+
+	<release version="4.0.0" date="2008-04-28">
+      <action dev="eiki" type="update">
+        First version of the Ascertia GoSign implementation in IdegaWEB
+      </action>              
+    </release>
+    
+  </body>
+</document>
