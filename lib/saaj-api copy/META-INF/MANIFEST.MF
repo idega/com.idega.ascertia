@@ -1,0 +1,7 @@
+Manifest-Version: 1.0
+Ant-Version: Apache Ant 1.5.3 
+Created-By: 1.5.0_05-b05 (Sun Microsystems Inc.)
+Specification-Title: SAAJ
+Specification-Version: 1.3
+Class-Path: jaxp-api.jar jax-qname.jar activation.jar servlet.jar
+
