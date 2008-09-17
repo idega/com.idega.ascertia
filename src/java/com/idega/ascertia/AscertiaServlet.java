@@ -13,7 +13,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Enumeration;
 
+import javax.faces.context.FacesContext;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -27,17 +29,12 @@ import com.ascertia.adss.client.api.DocumentHashingRequest;
 import com.ascertia.adss.client.api.DocumentHashingResponse;
 import com.ascertia.adss.client.api.SignatureAssemblyRequest;
 import com.ascertia.adss.client.api.SignatureAssemblyResponse;
-import com.ascertia.adss.client.api.SigningRequest;
+import com.idega.idegaweb.IWBundle;
+import com.idega.presentation.IWContext;
+import com.idega.webface.WFUtil;
 
-/**
- * <p>
- * This servlet handles all signing business for the Ascertia GoSign applet
- * </p>
- *  Last modified: $Date: 2008/09/10 00:03:23 $ by $Author: eiki $
- * 
- * @author <a href="mailto:eiki@idega.com">Eirikur Hrafnsson</a>
- * @version $Revision: 1.1 $
- */
+
+
 public class AscertiaServlet extends HttpServlet {
 	/**
 
@@ -52,6 +49,8 @@ public class AscertiaServlet extends HttpServlet {
 	public void init(ServletConfig a_objServletConfig) throws ServletException {
 
 		super.init(a_objServletConfig);
+		
+		System.out.println("Asctertia servlet started");
 
 	}
 
@@ -93,8 +92,10 @@ public class AscertiaServlet extends HttpServlet {
 
 		 */
 
-		String ADSS_URL = getServletContext().getInitParameter("ADSS_URL");
+		String ADSS_URL = "82.221.28.123/adss";//getServletContext().getInitParameter("ADSS_URL");
 
+		Enumeration<String> pamarms = getServletContext().getInitParameterNames();
+		
 		/**
 
 		 * URL of deployed PDF Signer Server, where Document Hashing's request(s) will be sent
@@ -280,16 +281,35 @@ public class AscertiaServlet extends HttpServlet {
 			 * Getting the path of gosign.properties file, that is a mandatory part of the web application
 
 			 */
+			
+			FacesContext fctx = WFUtil.createFacesContext(a_objRequest.getSession().getServletContext(), a_objRequest, a_objResponse);
+			IWContext iwc = IWContext.getIWContext(fctx);
+			
 
-			String str_path = getClass().getClassLoader().getResource(
+			//IWBundleResourceFilter.checkCopyOfResourceToWebapp(fctx, resourceURI);*/
+			
+			
+			
+			/*String str_path = getClass().getClassLoader().getResource(
 
-			"gosign.properties").toString();
+			"company.pdf").toString();*/ 
+			
 
-			str_path = str_path.substring(6, str_path.length() - 34);
+			IWBundle bundle = iwc.getIWMainApplication().getBundle("com.idega.ascertia");
+			InputStream is = bundle.getResourceInputStream("resources/company.pdf");
+			
+			
+			byte byte_file[];
+	        //FileInputStream obj_fis = new FileInputStream(is);
+	        byte_file = new byte[is.available()];
+	        is.read(byte_file);
+	        is.close();
+			
+			/*str_path = str_path.substring(6, str_path.length() - 34);
 
 			str_path = str_path.replaceAll("\"", "/");
 
-			str_path = str_path + "/pages/pdfs";
+			str_path = str_path + "/pages/pdfs";*/
 
 			String str_errorMessage = "Error message hasn't been set properly.";
 
@@ -307,21 +327,21 @@ public class AscertiaServlet extends HttpServlet {
 
 				ORIGINATOR_ID, USER_PROFILE_ID,
 
-				str_path + "/" + str_targetPDF + ".pdf",
+				/*str_path + "/" +*/  byte_file /*str_targetPDF + ".pdf"*/,
 
 				Base64.decode(str_certificate));
 
-				obj_documentHashingRequest.overrideProfileAttribute(
+				//obj_documentHashingRequest.overrideProfileAttribute(
 
-				SigningRequest.SIGNING_REASON, str_signingReason);
+				//SigningRequest.SIGNING_REASON, str_signingReason);
 
-				obj_documentHashingRequest.overrideProfileAttribute(
+				//obj_documentHashingRequest.overrideProfileAttribute(
 
-				SigningRequest.SIGNING_LOCATION, str_signingLocation);
+				//SigningRequest.SIGNING_LOCATION, str_signingLocation);
 
-				obj_documentHashingRequest.overrideProfileAttribute(
+				//obj_documentHashingRequest.overrideProfileAttribute(
 
-				SigningRequest.CONTACT_INFO, str_contactInfo);
+				//SigningRequest.CONTACT_INFO, str_contactInfo);
 
 				/* Sending request to the ADSS server */
 
@@ -387,7 +407,7 @@ public class AscertiaServlet extends HttpServlet {
 
 				"DocumentId");
 
-				String str_signedDocPath = str_path + "/" + str_docId + ".pdf";
+				String str_signedDocPath = /*str_path +*/ "/" + str_docId + ".pdf";
 
 				/* Constructing request for signature assembly */
 
@@ -411,10 +431,11 @@ public class AscertiaServlet extends HttpServlet {
 
 				if (obj_signatureAssemblyResponse.isResponseSuccessfull()) {
 
-					obj_signatureAssemblyResponse.writeSignedPDFTo(
+					//obj_signatureAssemblyResponse.writeSignedPDFTo(
 
-					str_signedDocPath);
+//					str_signedDocPath);
 
+					byte [] signedDoc = obj_signatureAssemblyResponse.getSignedDocument();
 					isResponseSuccessfull = true;
 
 				} else {
