@@ -50,15 +50,9 @@ public class AscertiaServlet extends HttpServlet {
 
 	// Process the HTTP Get request
 
-	public void doGet(HttpServletRequest request,
+	public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 
-	HttpServletResponse response) throws
-
-	ServletException, IOException {
-
-		System.out.println(
-
-		"GoSign Request Has Been Recieved in the doGet Method...");
+		System.out.println("GoSign Request Has Been Recieved in the doGet Method...");
 
 		response.setContentType("text/html");
 
@@ -68,15 +62,9 @@ public class AscertiaServlet extends HttpServlet {
 
 	// Process the HTTP Post request
 
-	public void doPost(HttpServletRequest request,
+	public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 
-	HttpServletResponse response) throws
-
-	ServletException, IOException {
-
-		System.out.println(
-
-		"GoSign Request Has Been Recieved in the doPost Method...");
+		System.out.println("GoSign Request Has Been Recieved in the doPost Method...");
 
 		/* Reading parameters' values from web.xml file */
 
@@ -108,9 +96,7 @@ public class AscertiaServlet extends HttpServlet {
 		 * User name, registered on PDF Signer Server
 		 */
 
-		String ORIGINATOR_ID = getServletContext().getInitParameter(
-
-		"ORIGINATOR_ID");
+		String ORIGINATOR_ID = getServletContext().getInitParameter("ORIGINATOR_ID");
 
 		/**
 		 * 
@@ -222,7 +208,7 @@ public class AscertiaServlet extends HttpServlet {
 
 			if (isFirstTime) {
 
-				// geting pdf from url
+				// getting pdf from url
 				String documentURL = request.getParameter(AscertiaConstants.DOCUMENT_URL);
 
 				URL url = new URL(documentURL);
@@ -235,8 +221,7 @@ public class AscertiaServlet extends HttpServlet {
 				// Getting empty signature field
 				byte[] pdfFileWithEmptySignature = null;
 
-				EmptySignatureFieldRequest emptySigFieldRequest = new EmptySignatureFieldRequest("samples_test_client", "adss:signing:profile:005", rawPdfFile);
-				//				
+				EmptySignatureFieldRequest emptySigFieldRequest = new EmptySignatureFieldRequest("samples_test_client", "adss:signing:profile:005", rawPdfFile);	
 				emptySigFieldRequest.overrideProfileAttribute(SigningRequest.SIGNING_REASON, "Testing");
 				System.out.println("\nA request has been sent to create blank signature(s) on the PDF. Waiting for response...");
 
@@ -249,44 +234,47 @@ public class AscertiaServlet extends HttpServlet {
 
 				if (emptySigFieldResponse.isResponseSuccessfull()) {
 					pdfFileWithEmptySignature = emptySigFieldResponse.getSignedDocument();
-
+					isResponseSuccessfull = true;
 					System.out.println("\nRequest has been processed successfully.");
 				} else {
+					isResponseSuccessfull = false;
 					System.out.println(emptySigFieldResponse.getErrorMessage());
-					// // return;
 				}
+				
+				if (isResponseSuccessfull) {
+					isResponseSuccessfull = false;
+					session = request.getSession(true);
 
-				session = request.getSession(true);
+					/* Constructing request for document hashing */
 
-				/* Constructing request for document hashing */
+					DocumentHashingRequest documentHashingRequest = new DocumentHashingRequest(ORIGINATOR_ID, USER_PROFILE_ID, pdfFileWithEmptySignature, Base64.decode(certificate));
 
-				DocumentHashingRequest documentHashingRequest = new DocumentHashingRequest(ORIGINATOR_ID, USER_PROFILE_ID, pdfFileWithEmptySignature, Base64.decode(certificate));
+					documentHashingRequest.overrideProfileAttribute(SigningRequest.SIGNING_REASON, "asdasd");
 
-				documentHashingRequest.overrideProfileAttribute(SigningRequest.SIGNING_REASON, "asdasd");
+					documentHashingRequest.overrideProfileAttribute(SigningRequest.SIGNING_LOCATION, "location");
 
-				documentHashingRequest.overrideProfileAttribute(SigningRequest.SIGNING_LOCATION, "location");
+					documentHashingRequest.overrideProfileAttribute(SigningRequest.CONTACT_INFO, "asd");
 
-				documentHashingRequest.overrideProfileAttribute(SigningRequest.CONTACT_INFO, "asd");
+					/* Sending request to the ADSS server */
 
-				/* Sending request to the ADSS server */
+					DocumentHashingResponse documentHashingResponse = (DocumentHashingResponse) documentHashingRequest.send(HASHING_URL);
 
-				DocumentHashingResponse documentHashingResponse = (DocumentHashingResponse) documentHashingRequest.send(HASHING_URL);
+					if (documentHashingResponse.isResponseSuccessfull()) {
 
-				if (documentHashingResponse.isResponseSuccessfull()) {
+						isResponseSuccessfull = true;
 
-					isResponseSuccessfull = true;
+						soapResponseBytes = documentHashingResponse.getDocumentHash();
 
-					soapResponseBytes = documentHashingResponse.getDocumentHash();
+						session.setAttribute("DocumentId",
 
-					session.setAttribute("DocumentId",
+						documentHashingResponse.getDocumentId());
+						System.out.println("Document hashing was successfull");
 
-					documentHashingResponse.getDocumentId());
-					System.out.println("Document hashing was successfull");
+					} else {
+						isResponseSuccessfull = false;
+						errorMessage = documentHashingResponse.getErrorMessage();
 
-				} else {
-
-					errorMessage = documentHashingResponse.getErrorMessage();
-
+					}
 				}
 
 			}
@@ -324,11 +312,11 @@ public class AscertiaServlet extends HttpServlet {
 
 				/* Constructing request for signature assembly */
 
-				SignatureAssemblyRequest obj_signatureAssemblyRequest = new SignatureAssemblyRequest(ORIGINATOR_ID, b_pkcs7, (String) session.getAttribute("DocumentId"));
+				SignatureAssemblyRequest signatureAssemblyRequest = new SignatureAssemblyRequest(ORIGINATOR_ID, b_pkcs7, (String) session.getAttribute("DocumentId"));
 
 				/* Sending request to the ADSS server */
 
-				SignatureAssemblyResponse signatureAssemblyResponse = (SignatureAssemblyResponse) obj_signatureAssemblyRequest.send(ASSEMBLY_URL);
+				SignatureAssemblyResponse signatureAssemblyResponse = (SignatureAssemblyResponse) signatureAssemblyRequest.send(ASSEMBLY_URL);
 
 				/* Setting dummy bytes */
 
