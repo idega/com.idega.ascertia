@@ -21,6 +21,7 @@ import com.idega.presentation.ui.DropdownMenu;
 import com.idega.presentation.ui.Form;
 import com.idega.presentation.ui.HiddenInput;
 import com.idega.presentation.ui.IFrame;
+import com.idega.util.CoreConstants;
 import com.idega.util.PresentationUtil;
 import com.idega.util.expression.ELUtil;
 
@@ -121,8 +122,8 @@ public class AscertiaSigner extends Block {
 		serverURL = (serverURL.endsWith("/")) ? serverURL.substring(0, serverURL.length() - 1) : serverURL;
 
 		// TODO get dynamically
-		String tmpStr =(String) iwc.getApplicationAttribute(AscertiaConstants.UNSIGNED_DOCUMENT_URL);
-		String documentURL = serverURL + "/content/files/public/Form_1.pdf";
+		String tmpStr = (String) iwc.getApplicationAttribute(AscertiaConstants.UNSIGNED_DOCUMENT_URL);
+		String documentURL = serverURL + CoreConstants.WEBDAV_SERVLET_URI + (String) iwc.getApplicationAttribute(AscertiaConstants.UNSIGNED_DOCUMENT_URL);
 
 		targetURL = serverURL + "/sign/signer";
 
@@ -131,7 +132,7 @@ public class AscertiaSigner extends Block {
 			fileName = fileName.substring(fileName.indexOf("/") + 1);
 		}
 		iwc.setApplicationAttribute(AscertiaConstants.SIGNED_DOCUMENT_URL, fileName);
-		
+
 		Layer mainDiv = new Layer();
 
 		mainDiv.add(PresentationUtil.getJavaScriptSourceLine(web2.getBundleURIToMootoolsLib()));
@@ -160,12 +161,16 @@ public class AscertiaSigner extends Block {
 		serverURL = (serverURL.endsWith("/")) ? serverURL.substring(0, serverURL.length() - 1) : serverURL;
 
 		// TODO get dynamically
-		String documentURL = serverURL + "/content"+BPMConstants.SIGNED_PDF_OF_XFORMS_PATH_IN_SLIDE + iwc.getApplicationAttribute(AscertiaConstants.SIGNED_DOCUMENT_URL);// iwc.getParameter(AscertiaConstants.UNSINGNED_DOCUMENT_URL);
+		String documentURL = serverURL + "/content" + BPMConstants.SIGNED_PDF_OF_XFORMS_PATH_IN_SLIDE + iwc.getApplicationAttribute(AscertiaConstants.SIGNED_DOCUMENT_URL);// iwc.getParameter(AscertiaConstants.UNSINGNED_DOCUMENT_URL);
 
 		Layer mainDiv = new Layer();
 		mainDiv.add(new Heading1("signed ok!"));
 		IFrame frame = new IFrame("signedDocument", documentURL);
 		mainDiv.add(frame);
+		Link downlaod = new Link("Download");
+		downlaod.setURL(documentURL);
+
+		mainDiv.add(downlaod);
 		add(mainDiv);
 	}
 
