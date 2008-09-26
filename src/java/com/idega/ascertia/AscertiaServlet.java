@@ -7,11 +7,8 @@
 
 package com.idega.ascertia;
 
-import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -19,7 +16,6 @@ import java.net.URL;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
-import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -34,11 +30,8 @@ import com.ascertia.adss.client.api.EmptySignatureFieldResponse;
 import com.ascertia.adss.client.api.SignatureAssemblyRequest;
 import com.ascertia.adss.client.api.SignatureAssemblyResponse;
 import com.ascertia.adss.client.api.SigningRequest;
-import com.idega.bpm.BPMConstants;
 import com.idega.business.IBOLookup;
-import com.idega.business.IBOLookupException;
 import com.idega.core.file.util.MimeTypeUtil;
-import com.idega.idegaweb.IWMainApplication;
 import com.idega.presentation.IWContext;
 import com.idega.slide.business.IWSlideService;
 import com.idega.util.CoreConstants;
@@ -433,7 +426,7 @@ public class AscertiaServlet extends HttpServlet {
 			is = new ByteArrayInputStream(documentToWrite);
 			
 			return ((IWSlideService) IBOLookup.getServiceInstance(IWContext.getCurrentInstance(), IWSlideService.class)).
-				uploadFileAndCreateFoldersFromStringAsRoot(BPMConstants.SIGNED_PDF_OF_XFORMS_PATH_IN_SLIDE, documentName, is, MimeTypeUtil.MIME_TYPE_PDF_1, true);
+				uploadFileAndCreateFoldersFromStringAsRoot(/*BPMConstants.SIGNED_PDF_OF_XFORMS_PATH_IN_SLIDE*/"/files/cms/xforms/pdf/signed/", documentName, is, MimeTypeUtil.MIME_TYPE_PDF_1, true);
 		} catch(Exception e) {
 			e.printStackTrace();
 		} finally {

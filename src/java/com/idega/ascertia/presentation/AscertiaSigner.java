@@ -3,11 +3,8 @@ package com.idega.ascertia.presentation;
 import java.rmi.RemoteException;
 
 import org.apache.myfaces.renderkit.html.util.AddResource;
-import org.apache.myfaces.renderkit.html.util.AddResourceFactory;
-
 import com.idega.ascertia.AscertiaConstants;
 import com.idega.block.web2.business.Web2Business;
-import com.idega.bpm.BPMConstants;
 import com.idega.business.IBOLookup;
 import com.idega.core.builder.business.BuilderService;
 import com.idega.idegaweb.IWBundle;
@@ -89,7 +86,7 @@ public class AscertiaSigner extends Block {
 
 		// AddResource resourceAdder = AddResourceFactory.getInstance(iwc);
 
-		web2 = (Web2Business) ELUtil.getInstance().getBean(Web2Business.class);
+		web2 = ELUtil.getInstance().getBean(Web2Business.class);
 		bundle = this.getBundle(iwc);
 		goSignRootRootURI = bundle.getVirtualPathWithFileNameString("javascript/GoSign");
 		goSignJSFile = goSignRootRootURI + "/lib/gosign.js";
@@ -123,7 +120,7 @@ public class AscertiaSigner extends Block {
 
 		// TODO get dynamically
 		String tmpStr = (String) iwc.getApplicationAttribute(AscertiaConstants.UNSIGNED_DOCUMENT_URL);
-		String documentURL = serverURL + CoreConstants.WEBDAV_SERVLET_URI + (String) iwc.getApplicationAttribute(AscertiaConstants.UNSIGNED_DOCUMENT_URL);
+		String documentURL = serverURL + CoreConstants.WEBDAV_SERVLET_URI + CoreConstants.SLASH + (String) iwc.getApplicationAttribute(AscertiaConstants.UNSIGNED_DOCUMENT_URL);
 
 		targetURL = serverURL + "/sign/signer";
 
@@ -161,7 +158,7 @@ public class AscertiaSigner extends Block {
 		serverURL = (serverURL.endsWith("/")) ? serverURL.substring(0, serverURL.length() - 1) : serverURL;
 
 		// TODO get dynamically
-		String documentURL = serverURL + "/content" + BPMConstants.SIGNED_PDF_OF_XFORMS_PATH_IN_SLIDE + iwc.getApplicationAttribute(AscertiaConstants.SIGNED_DOCUMENT_URL);// iwc.getParameter(AscertiaConstants.UNSINGNED_DOCUMENT_URL);
+		String documentURL = serverURL + "/content" + /*BPMConstants.SIGNED_PDF_OF_XFORMS_PATH_IN_SLIDE*/"/files/cms/xforms/pdf/signed/" + iwc.getApplicationAttribute(AscertiaConstants.SIGNED_DOCUMENT_URL);// iwc.getParameter(AscertiaConstants.UNSINGNED_DOCUMENT_URL);
 
 		Layer mainDiv = new Layer();
 		mainDiv.add(new Heading1("signed ok!"));
