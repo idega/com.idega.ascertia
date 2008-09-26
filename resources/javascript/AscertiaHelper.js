@@ -1,11 +1,12 @@
 //depends on mootools
 
-function embedAscertiaApplet(URLToParentJSFolder){
+function embedAscertiaApplet(URLToParentJSFolder,formName){
 		var initResults = GoSign_EmbedApplet(URLToParentJSFolder,'PDF', 'ZERO_FOOTPRINT', 'REMOTE'); 
+		GoSign_SetFormName(formName);
 		if( initResults != true){ 
 		  alert(GoSign_GetErrorReason()); 
 		} 
-	
+		
 	
 		var b_result = GoSign_ShowCertificates(); 
 		if( b_result != true){ 
@@ -17,7 +18,7 @@ function embedAscertiaApplet(URLToParentJSFolder){
 function signDocument(){
 	var result = GoSign_SignDocument(); 
 	if( result != true){ 
-	  alert(GoSign_GetErrorReason()); 
+	  alert(GoSign_GetErrorCode()+GoSign_GetErrorReason()); 
 	} 	
 }
 

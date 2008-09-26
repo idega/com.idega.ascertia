@@ -1,13 +1,23 @@
+var formName;
+
 function GoSign_OpenDocument(x){	
     window.open(x, '_self');        
 }
 
+function GoSign_SetFormName(a_formName){
+	formName = a_formName;
+}
+
+function GoSign_GetFormName(){
+	return formName;
+}
+
 function GoSign_ReadHtmlFields(){
 
-	var elems = document.forms[0].elements;	
+	var elems = document.forms[formName].elements;	
 	var result = elems[0].name;	
 	
-	for(i=1; i<document.forms[0].length; i++){
+	for(i=1; i<document.forms[formName].length; i++){
 		result = result + "," + elems[i].name;
 	}	
 	return result;
@@ -25,8 +35,9 @@ function GoSign_ShowCertificates(){
 }
 
 function GoSign_PopulateCertificates(certs, aliases){
-	
-	var select_certs = document.forms[0].elements.GoSignCertificateList;
+	//console.log('before');
+	var select_certs = document.forms[formName].elements.GoSignCertificateList;
+	//console.log('after');
 	var array_certs = certs.split('~&~');
 	var array_aliases = aliases.split('~&~');	
 	for(var i=0; i<array_certs.length; i++){
@@ -95,54 +106,54 @@ function GoSign_GetErrorReason(){
 function GoSign_EmbedApplet(GoSignRootFolderURL, SignatureType, SignatureMechanism, ContentSource) {
 	document.write('<p>' +
 	'' +
-	'<!--[if !IE]> Firefox and others will use outer object -->\n' +
+	'<!--[if !IE]> Firefox and others will use outer object -->' +
 	'      <object classid=\"java:com.ascertia.zfp.gosign.applet.ASC_GoSignApplet.class\" ' +
 	'               name=\"GoSign\" type=\"application/x-java-applet\"' +
 	'              archive=\"asc_gosign.jar,assembla_msks_jce.jar\" ' +
-	'              height=\"0\" width=\"0\" >\n' +
+	'              height=\"0\" width=\"0\" >' +
 	'        <!-- Konqueror browser needs the following param --> ' +
 	'		<param name=\"codebase\" value=\"'+GoSignRootFolderURL+'/lib\" />\n' +
-	'        <param name=\"archive\" value=\"asc_gosign.jar,assembla_msks_jce.jar\" />\n		' +
-	'    <param name=\"GoSignRootFolderURL\" value=' + GoSignRootFolderURL + '>\n' +
-	'    <param name=\"SignatureType\" value=' + SignatureType + '>\n' +
-	'    <param name=\"SignatureMechanism\" value=' + SignatureMechanism + '>\n' +
-	'    <param name=\"ContentSource\" value=' + ContentSource + '>\n' +	
-	'		<param name=\"name\" value=\"Ascertia GoSign\" />\n' +
-	'		<param name=\"mayscript\" value=\"true\">\n' +
-	'      <!--<![endif]-->\n' +
-	'        <!-- MSIE (Microsoft Internet Explorer) will use inner object -->\n ' +
-	'        <object name=\"GoSign\" title=\"Ascertia GoSign Applet\" classid=\"clsid:8AD9C840-044E-11D1-B3E9-00805F499D93\"' +
+	'        <param name=\"archive\" value=\"asc_gosign.jar,assembla_msks_jce.jar\" />		' +
+	'    <param name=\"GoSignRootFolderURL\" value=' + GoSignRootFolderURL + '>' +
+	'    <param name=\"SignatureType\" value=' + SignatureType + '>' +
+	'    <param name=\"SignatureMechanism\" value=' + SignatureMechanism + '>' +
+	'    <param name=\"ContentSource\" value=' + ContentSource + '>' +	
+	'		<param name=\"name\" value=\"Ascertia GoSign\" />' +
+	'		<param name=\"mayscript\" value=\"true\">' +
+	'      <!--<![endif]-->' +
+	'        <!-- MSIE (Microsoft Internet Explorer) will use inner object --> ' +
+	'         <object name=\"GoSign\" title=\"Ascertia GoSign Applet\" classid=\"clsid:8AD9C840-044E-11D1-B3E9-00805F499D93\"' +
 	'    width=\"0\" height=\"0\" hspace=\"0\" vspace=\"0\" align=\"baseline\"' +
-	'    codebase=\"http://javadl-esd.sun.com/update/1.5.0/jinstall-1_5-windows-i586.cab#Version=1,5,0,0\">\n' +
-	'		' +
-	'    <param name=\"codebase\" value=\"'+GoSignRootFolderURL+'/lib\">\n' +
-	'    <param name=\"code\" value=\"com.ascertia.zfp.gosign.applet.ASC_GoSignApplet.class\">\n' +
-	'    <param name=\"name\" value=\"Ascertia GoSign\">\n' +
-	'    <param name=\"archive\" value=\"asc_gosign.jar,assembla_msks_jce.jar\">\n' +
-	'    <param name=\"GoSignRootFolderURL\" value=' + GoSignRootFolderURL + '>\n' +
-	'    <param name=\"SignatureType\" value=' + SignatureType + '>\n' +
-	'    <param name=\"SignatureMechanism\" value=' + SignatureMechanism + '>\n' +
-	'    <param name=\"ContentSource\" value=' + ContentSource + '>\n' +	
-	'    <param name=\"mayscript\" value=\"true\">\n' +
-	'      <font color=\"#FF0000\">\n' +
+	'    codebase=\"http://javadl-esd.sun.com/update/1.5.0/jinstall-1_5-windows-i586.cab#Version=1,5,0,0\">' +
+	' ' +
+	'    <param name=\"codebase\" value=\"GoSign/lib\">' +
+	'    <param name=\"code\" value=\"com.ascertia.zfp.gosign.applet.ASC_GoSignApplet.class\">' +
+	'    <param name=\"name\" value=\"Ascertia GoSign\">' +
+	'    <param name=\"archive\" value=\"asc_gosign.jar,assembla_msks_jce.jar\">' +
+	'    <param name=\"GoSignRootFolderURL\" value=' + GoSignRootFolderURL + '>' +
+	'    <param name=\"SignatureType\" value=' + SignatureType + '>' +
+	'    <param name=\"SignatureMechanism\" value=' + SignatureMechanism + '>' +
+	'    <param name=\"ContentSource\" value=' + ContentSource + '>' +	
+	'    <param name=\"mayscript\" value=\"true\">' +
+	'      <font color=\"#FF0000\">' +
 	'      No Java Runtime Environment (JRE) found, get the correct Java plug-in from ' +
-	' <a href=\"http://www.java.com/en/download/\"><font color=\"#0000FF\">here.</font></a>\n' +
-	'  </object>\n  ' +
-	'      <!--[if !IE]> close outer object -->\n' +
+	' <a href=\"http://www.java.com/en/download/\"><font color=\"#0000FF\">here.</font></a>' +
+	'  </object>  ' +
+	'      <!--[if !IE]> close outer object -->' +
 	'' +
-	'      </object>\n' +
-	'      <!--<![endif]-->\n  ' +
+	'      </object>' +
+	'      <!--<![endif]-->  ' +
 	'' +
-	'</p>\n' +
+	'</p>' +
 	'' +
-	'<p>\n' +
+	'<p>' +
 	'      <strong>NOTE:</strong> Java Runtime Environment (JRE) version 5.0 (or latest) is needed to run the GoSign applet. If the applet does not load properly please get the correct Java plug-in from' +
 	'             ' +
 	'      <a href=\"http://www.java.com/en/download/\">' +
 	'' +
-	'        <font color=\"#0000FF\">here.</font>\n' +
-	'      </a>\n' +
-	'    </p>\n');
+	'        <font color=\"#0000FF\">here.</font>' +
+	'      </a>' +
+	'    </p>');
 	
 	var gosign = GetGoSignObject();	
 	var error_code = gosign.getErrorCode();
@@ -151,6 +162,7 @@ function GoSign_EmbedApplet(GoSignRootFolderURL, SignatureType, SignatureMechani
 		error_code = gosign.getErrorCode();
 	}
 	if( error_code == 0 ){
+		formName = document.forms[0].name;
 		return true;
 	}
 	else{
