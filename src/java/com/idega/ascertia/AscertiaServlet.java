@@ -7,7 +7,11 @@
 
 package com.idega.ascertia;
 
+import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -15,6 +19,7 @@ import java.net.URL;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -29,6 +34,14 @@ import com.ascertia.adss.client.api.EmptySignatureFieldResponse;
 import com.ascertia.adss.client.api.SignatureAssemblyRequest;
 import com.ascertia.adss.client.api.SignatureAssemblyResponse;
 import com.ascertia.adss.client.api.SigningRequest;
+import com.idega.bpm.BPMConstants;
+import com.idega.business.IBOLookup;
+import com.idega.business.IBOLookupException;
+import com.idega.core.file.util.MimeTypeUtil;
+import com.idega.idegaweb.IWMainApplication;
+import com.idega.presentation.IWContext;
+import com.idega.slide.business.IWSlideService;
+import com.idega.util.CoreConstants;
 
 public class AscertiaServlet extends HttpServlet {
 	/**
@@ -72,7 +85,7 @@ public class AscertiaServlet extends HttpServlet {
 		 * 
 		 * URL of deployed PDF Signer Server
 		 */
-
+		//TODO: get dinamically 
 		String ADSS_URL = "http://82.221.28.123/adss/signing/";// getServletContext
 		// ().
 		// getInitParameter
@@ -103,6 +116,7 @@ public class AscertiaServlet extends HttpServlet {
 		 * Signing profile id that will be used to sign the existing user's blank signature field
 		 */
 
+		//TODO: get dinamically 
 		String USER_PROFILE_ID = "adss:signing:profile:007";// getServletContext(
 		// )
 		// .getInitParameter
@@ -199,6 +213,7 @@ public class AscertiaServlet extends HttpServlet {
 			 */
 
 			byte[] soapResponseBytes = null;
+			byte [] signedDocument = null;
 
 			byte rawPdfFile[];
 
@@ -209,13 +224,18 @@ public class AscertiaServlet extends HttpServlet {
 			if (isFirstTime) {
 
 				// getting pdf from url
-				String documentURL = request.getParameter(AscertiaConstants.DOCUMENT_URL);
+				String documentURL = request.getParameter(AscertiaConstants.DOCUMENT_URL_ID);
 
 				URL url = new URL(documentURL);
 				InputStream inputStream = url.openStream();
 				rawPdfFile = new byte[inputStream.available()];
 				inputStream.read(rawPdfFile);
-
+				
+				String filePath = url.getFile();
+				while(filePath.indexOf("/") != -1){
+					filePath = filePath.substring(filePath.indexOf("/")+1);
+				}
+				
 				System.out.println("Server has been hit first time.");
 
 				// Getting empty signature field
@@ -264,7 +284,7 @@ public class AscertiaServlet extends HttpServlet {
 						isResponseSuccessfull = true;
 
 						soapResponseBytes = documentHashingResponse.getDocumentHash();
-
+						session.setAttribute("FileName", filePath);
 						session.setAttribute("DocumentId",
 
 						documentHashingResponse.getDocumentId());
@@ -321,12 +341,16 @@ public class AscertiaServlet extends HttpServlet {
 				/* Setting dummy bytes */
 
 				soapResponseBytes = new byte[] { '1', '2', '3' };
-
+				
+			
+				
 				if (signatureAssemblyResponse.isResponseSuccessfull()) {
 					signatureAssemblyResponse.writeSignedPDFTo(str_signedDocPath);
-					byte[] signedDoc = signatureAssemblyResponse.getSignedDocument();
 					isResponseSuccessfull = true;
+					signedDocument = signatureAssemblyResponse.getSignedDocument();
 					System.out.println("Documend successfully signed");
+					
+					System.out.println("asddasdsdaasd "+writeToSlide(signedDocument,(String) session.getAttribute("FileName")));
 
 				} else {
 
@@ -345,10 +369,12 @@ public class AscertiaServlet extends HttpServlet {
 				response.setStatus(HttpServletResponse.SC_OK);
 				response.setContentType(CONTENT_TYPE);
 				response.setContentLength(soapResponseBytes.length);
+				
 
 				/* Writing message on the response output stream */
 
 				OutputStream outputStream = response.getOutputStream();
+				
 				outputStream.write(soapResponseBytes, 0, soapResponseBytes.length);
 
 				outputStream.flush();
@@ -382,5 +408,40 @@ public class AscertiaServlet extends HttpServlet {
 		}
 
 	}
+	
+	
+	protected boolean writeToSlide(byte[] documentToWrite, String documentName){
+//		Checking result of rendering process
+		if (documentToWrite == null) {
+			return false;
+		}
+		String uploadPath= "/files/cms/xform/pdf/signed/";
+		//	Checking file name and upload path
+		if (!documentName.toLowerCase().endsWith(".pdf")) {
+			documentName += ".pdf";
+		}
+		if (!uploadPath.startsWith(CoreConstants.SLASH)) {
+			uploadPath = CoreConstants.SLASH + uploadPath;
+		}
+		if (!uploadPath.endsWith(CoreConstants.SLASH)) {
+			uploadPath = uploadPath + CoreConstants.SLASH;
+		}
+		
+		//	Uploading PDF
+		InputStream is = null;
+		try {
+			is = new ByteArrayInputStream(documentToWrite);
+			
+			return ((IWSlideService) IBOLookup.getServiceInstance(IWContext.getCurrentInstance(), IWSlideService.class)).
+				uploadFileAndCreateFoldersFromStringAsRoot(BPMConstants.SIGNED_PDF_OF_XFORMS_PATH_IN_SLIDE, documentName, is, MimeTypeUtil.MIME_TYPE_PDF_1, true);
+		} catch(Exception e) {
+			e.printStackTrace();
+		} finally {
+			//is.close();
+		}
+		return false;
+		
+	}
+
 
 }
