@@ -3,7 +3,9 @@ package com.idega.ascertia.presentation;
 import java.rmi.RemoteException;
 
 import org.apache.myfaces.renderkit.html.util.AddResource;
+
 import com.idega.ascertia.AscertiaConstants;
+import com.idega.block.pdf.PDFWriter;
 import com.idega.block.web2.business.Web2Business;
 import com.idega.business.IBOLookup;
 import com.idega.core.builder.business.BuilderService;
@@ -12,7 +14,8 @@ import com.idega.presentation.Block;
 import com.idega.presentation.IWContext;
 import com.idega.presentation.Layer;
 import com.idega.presentation.Script;
-import com.idega.presentation.text.Heading1;
+import com.idega.presentation.text.DownloadLink;
+import com.idega.presentation.text.Heading5;
 import com.idega.presentation.text.Link;
 import com.idega.presentation.ui.DropdownMenu;
 import com.idega.presentation.ui.Form;
@@ -21,6 +24,9 @@ import com.idega.presentation.ui.IFrame;
 import com.idega.util.CoreConstants;
 import com.idega.util.PresentationUtil;
 import com.idega.util.expression.ELUtil;
+
+
+//TODO: refactoring, localization, styleclasses etc...
 
 /**
  * A Block for signing documents (pdf) See <a href="http://www.ascertia.com">www.ascertia.com</a> for details on the GoSign product.<br>
@@ -41,6 +47,7 @@ public class AscertiaSigner extends Block {
 	private String ADSS_epty_siganture_profile;
 	private String formName;
 	private String fileName;
+	private String filePath;
 
 	private static final String PARAMETER_ACTION = "signing_action_parameter";
 	private static final int PARAMETER_SHOW_UNSIGNED_PDF = 1;
@@ -81,6 +88,15 @@ public class AscertiaSigner extends Block {
 	public void setFormName(String formName) {
 		this.formName = formName;
 	}
+	
+	
+	public String getFilePath() {
+		return filePath;
+	}
+
+	public void setFilePath(String filePath) {
+		this.filePath = filePath;
+	}
 
 	public void main(IWContext iwc) throws RemoteException {
 
@@ -119,8 +135,8 @@ public class AscertiaSigner extends Block {
 		serverURL = (serverURL.endsWith("/")) ? serverURL.substring(0, serverURL.length() - 1) : serverURL;
 
 		// TODO get dynamically
-		String tmpStr = (String) iwc.getApplicationAttribute(AscertiaConstants.UNSIGNED_DOCUMENT_URL);
-		String documentURL = serverURL + CoreConstants.WEBDAV_SERVLET_URI + CoreConstants.SLASH + (String) iwc.getApplicationAttribute(AscertiaConstants.UNSIGNED_DOCUMENT_URL);
+		
+		String documentURL = serverURL + CoreConstants.WEBDAV_SERVLET_URI + CoreConstants.SLASH + iwc.getParameter(AscertiaConstants.UNSIGNED_DOCUMENT_URL);
 
 		targetURL = serverURL + "/sign/signer";
 
@@ -137,9 +153,15 @@ public class AscertiaSigner extends Block {
 		mainDiv.add(PresentationUtil.getJavaScriptSourceLine(goSignJSFile));
 
 		IFrame documentFrame = new IFrame("document_view_frame", documentURL);
+		documentFrame.setWidth("100%");
+		documentFrame.setHeight(400);
 		mainDiv.add(documentFrame);
-
-		mainDiv.add(addForm(iwc, documentURL));
+		
+		Layer signingLayer = new Layer();
+		signingLayer.add(addForm(iwc, documentURL));
+		signingLayer.setStyleAttribute("text-align", "center");
+		signingLayer.setStyleAttribute("padding-top", "10px");
+		mainDiv.add(signingLayer);
 
 		Script script = new Script();
 
@@ -157,17 +179,46 @@ public class AscertiaSigner extends Block {
 		String serverURL = iwc.getServerURL();
 		serverURL = (serverURL.endsWith("/")) ? serverURL.substring(0, serverURL.length() - 1) : serverURL;
 
-		// TODO get dynamically
-		String documentURL = serverURL + "/content" + /*BPMConstants.SIGNED_PDF_OF_XFORMS_PATH_IN_SLIDE*/"/files/cms/xforms/pdf/signed/" + iwc.getApplicationAttribute(AscertiaConstants.SIGNED_DOCUMENT_URL);// iwc.getParameter(AscertiaConstants.UNSINGNED_DOCUMENT_URL);
+		String documentURL = serverURL + CoreConstants.WEBDAV_SERVLET_URI + CoreConstants.CONTENT_PATH + CoreConstants.SLASH +"xforms/pdf/signed/" + iwc.getApplicationAttribute(AscertiaConstants.SIGNED_DOCUMENT_URL);// iwc.getParameter(AscertiaConstants.UNSINGNED_DOCUMENT_URL);
 
 		Layer mainDiv = new Layer();
-		mainDiv.add(new Heading1("signed ok!"));
+		mainDiv.setWidth("100%");
+		mainDiv.setHeight("95%");
+		
+		Layer headerDiv = new Layer();
+		headerDiv.setStyleAttribute("text-align", "center");
+		headerDiv.setStyleAttribute("padding-bottom", "5px");
+		//TODO: localization
+		headerDiv.add(new Heading5("Document signed successfully"));
+		
+		mainDiv.add(headerDiv);
+		
 		IFrame frame = new IFrame("signedDocument", documentURL);
+		frame.setWidth("100%");
+		frame.setHeight("80%");
 		mainDiv.add(frame);
-		Link downlaod = new Link("Download");
-		downlaod.setURL(documentURL);
-
-		mainDiv.add(downlaod);
+		
+		Layer downLoadDiv = new Layer();
+		downLoadDiv.setStyleAttribute("padding-top", "5px");
+		downLoadDiv.setStyleAttribute("text-align", "center");
+				
+		
+		DownloadLink pdfLink = new DownloadLink("Download");
+		//pdfLink.setStyleClass(CasesEngine.PDF_GENERATOR_AND_DOWNLOAD_LINK_STYLE_CLASS);
+		pdfLink.setMediaWriterClass(PDFWriter.class);
+		pdfLink.addParameter(PDFWriter.PDF_URL_PARAMETER, CoreConstants.WEBDAV_SERVLET_URI + CoreConstants.CONTENT_PATH + CoreConstants.SLASH +"xforms/pdf/signed/" + iwc.getApplicationAttribute(AscertiaConstants.SIGNED_DOCUMENT_URL));
+		
+		downLoadDiv.add(pdfLink);
+		
+		
+		
+		
+		mainDiv.add(downLoadDiv);
+		
+		
+		
+		
+		
 		add(mainDiv);
 	}
 
