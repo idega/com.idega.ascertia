@@ -70,6 +70,10 @@
 			<artifactId>com.idega.block.pdf</artifactId>
 		</dependency>
 		<dependency>
+			<groupId>com.idega.block.addon</groupId>
+			<artifactId>com.idega.bpm</artifactId>
+		</dependency>
+		<dependency>
 			<groupId>org.beanshell</groupId>
 			<artifactId>bsh</artifactId>
 			<version>${bsh-bsh-version}</version>
