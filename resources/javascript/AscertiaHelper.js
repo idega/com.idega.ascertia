@@ -15,11 +15,16 @@ function embedAscertiaApplet(URLToParentJSFolder,formName){
 	} 
 
 
-function signDocument(){
+function signDocument(successPage,errorPage, loadingMessage){
+	showLoadingMessage(loadingMessage);
 	var result = GoSign_SignDocument(); 
+	console.log('signDoc called ' + result);
 	if( result != true){ 
-	  alert(GoSign_GetErrorCode()+GoSign_GetErrorReason()); 
-	} 	
+	  //alert(GoSign_GetErrorCode()+GoSign_GetErrorReason()); 
+	  changeWindowLocationHrefAndCheckParameters(errorPage+'&errorReason='+GoSign_GetErrorReason(),true);
+	 }else{
+	  changeWindowLocationHrefAndCheckParameters(successPage,true);
+	}
 }
 
 window.addEvent('domready', function() {

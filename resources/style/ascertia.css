@@ -1,0 +1,28 @@
+/*** General HTML definitions ***/
+	/*** idegaWeb WebFace CSS classes ***/
+.something {
+	
+}
+
+.pdf_frame {
+	width: 100%;
+	height: 75%;
+}
+
+.error_layer {
+	color: red;
+}
+
+.under_frame_layer {
+	text-align: center;
+	padding-top: 5px;
+}
+
+.signed_success_message_layer {
+	text-align: center;
+	padding-bottom: 5px;
+}
+.main_layer{
+	width:100%;
+	height: 100%;
+}

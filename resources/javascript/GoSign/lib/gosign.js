@@ -1,7 +1,8 @@
 var formName;
 
 function GoSign_OpenDocument(x){	
-    window.open(x, '_self');        
+	//console.log(x);
+	//window.open(x, '_self');        
 }
 
 function GoSign_SetFormName(a_formName){

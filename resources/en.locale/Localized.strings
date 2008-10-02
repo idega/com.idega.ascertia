@@ -1,0 +1,5 @@
+iw.component.com.idega.ascertia.presentation.AscertiaSigner.name=Ascertia Signer
+sign_document=Sign document
+signed_successfully=Document signed successfully
+signing=Signing...
+download=Download
