@@ -275,8 +275,6 @@ public class AscertiaServlet extends HttpServlet {
 				String fileName; 
 				if (documentURL == null || documentURL.trim().equals("")) {
 
-					String tmpStr1 = request.getParameter(AscertiaConstants.PARAM_VARIABLE_HASH);
-					String tmpStr2 = request.getParameter(AscertiaConstants.PARAM_TASK_ID);
 					
 					Integer variableHash = Integer
 							.valueOf(request
@@ -454,8 +452,7 @@ public class AscertiaServlet extends HttpServlet {
 				if (signatureAssemblyResponse.isResponseSuccessfull()) {
 					
 					//writing to disk
-					signatureAssemblyResponse
-							.writeSignedPDFTo(str_signedDocPath);
+					
 					isResponseSuccessfull = true;
 					signedDocument = signatureAssemblyResponse
 							.getSignedDocument();
