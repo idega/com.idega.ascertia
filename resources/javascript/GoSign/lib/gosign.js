@@ -127,7 +127,7 @@ function GoSign_EmbedApplet(GoSignRootFolderURL, SignatureType, SignatureMechani
 	'    width=\"0\" height=\"0\" hspace=\"0\" vspace=\"0\" align=\"baseline\"' +
 	'    codebase=\"http://javadl-esd.sun.com/update/1.5.0/jinstall-1_5-windows-i586.cab#Version=1,5,0,0\">' +
 	' ' +
-	'    <param name=\"codebase\" value=\"GoSign/lib\">' +
+	'    <param name=\"codebase\" value=\"' + GoSignRootFolderURL +'/lib\">' +
 	'    <param name=\"code\" value=\"com.ascertia.zfp.gosign.applet.ASC_GoSignApplet.class\">' +
 	'    <param name=\"name\" value=\"Ascertia GoSign\">' +
 	'    <param name=\"archive\" value=\"asc_gosign.jar,assembla_msks_jce.jar\">' +
