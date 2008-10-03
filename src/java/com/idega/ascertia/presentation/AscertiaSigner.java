@@ -294,13 +294,11 @@ public class AscertiaSigner extends Block {
 
 		
 		//no download atm:)
-		/*DownloadLink pdfLink = new DownloadLink(getLocalizedString("download", "Download", iwc));
+		DownloadLink pdfLink = new DownloadLink(getLocalizedString("download", "Download", iwc));
 		pdfLink.setMediaWriterClass(PDFWriter.class);
-		pdfLink.addParameter(PDFWriter.PDF_URL_PARAMETER, CoreConstants.WEBDAV_SERVLET_URI 
-			+ CoreConstants.CONTENT_PATH + CoreConstants.SLASH + "xforms/pdf/signed/"
-			+ iwc.getApplicationAttribute(AscertiaConstants.SIGNED_DOCUMENT_URL));
+		pdfLink.addParameter(PDFWriter.PDF_URL_PARAMETER,CoreConstants.WEBDAV_SERVLET_URI + CoreConstants.CONTENT_PATH + CoreConstants.SLASH + "xforms/pdf/signed/" +"SignedDoc.pdf");
 
-		downLoadDiv.add(pdfLink);*/
+		downLoadDiv.add(pdfLink);
 
 		mainDiv.add(downLoadDiv);
 
