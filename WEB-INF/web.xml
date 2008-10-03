@@ -10,6 +10,7 @@
 			<param-name>ADSS_URL</param-name>
 			<param-value>82.221.28.123/adss/</param-value>
 		</init-param>
+		<load-on-startup>1</load-on-startup>
 	</servlet>
 	<servlet-mapping>
 		<servlet-name>Ascertia Servlet</servlet-name>
