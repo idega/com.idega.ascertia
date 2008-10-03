@@ -8,19 +8,14 @@ import com.idega.ascertia.presentation.AscertiaSigningForm;
 import com.idega.bpm.pdf.business.ProcessTaskInstanceConverterToPDF;
 import com.idega.builder.business.BuilderLogicWrapper;
 import com.idega.idegaweb.IWMainApplication;
-import com.idega.idegaweb.IWResourceBundle;
-import com.idega.jbpm.artifacts.presentation.ProcessArtifacts;
-import com.idega.jbpm.artifacts.presentation.ProcessArtifactsParamsBean;
 import com.idega.jbpm.signing.SigningHandler;
-import com.idega.jbpm.variables.BinaryVariable;
-import com.idega.util.CoreConstants;
 import com.idega.util.StringUtil;
 
 /**
  * @author <a href="mailto:juozas@idega.com">Juozapas Zabukas</a>
- * @version $Revision: 1.2 $
+ * @version $Revision: 1.3 $
  * 
- *          Last modified: $Date: 2008/10/03 10:54:39 $ by $Author: juozas $
+ *          Last modified: $Date: 2008/10/03 10:55:46 $ by $Author: juozas $
  */
 @Scope("singleton")
 @Service

@@ -22,9 +22,7 @@ public class AscertiaSigningForm extends Block {
 		div.setHeight("100%");
 
 		BuilderService builderService = BuilderServiceFactory
-				.getBuilderService(iwc);
-
-		
+				.getBuilderService(iwc);		
 		
 		String pathToSigner = builderService.getUriToObject(AscertiaSigner.class,
 			Arrays.asList(new AdvancedProperty[] {

@@ -18,12 +18,12 @@ function embedAscertiaApplet(URLToParentJSFolder,formName){
 function signDocument(successPage,errorPage, loadingMessage){
 	showLoadingMessage(loadingMessage);
 	var result = GoSign_SignDocument(); 
-	console.log('signDoc called ' + result);
+	
 	if( result != true){ 
 	  //alert(GoSign_GetErrorCode()+GoSign_GetErrorReason()); 
-	  changeWindowLocationHrefAndCheckParameters(errorPage+'&errorReason='+GoSign_GetErrorReason(),true);
+		window.location.href = errorPage+'&errorReason='+GoSign_GetErrorReason();
 	 }else{
-	  changeWindowLocationHrefAndCheckParameters(successPage,true);
+		 window.location.href =successPage;
 	}
 }
 

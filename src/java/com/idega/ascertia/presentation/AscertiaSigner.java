@@ -113,6 +113,7 @@ public class AscertiaSigner extends Block {
 				&& !iwc.getParameter(AscertiaConstants.UNSIGNED_DOCUMENT_URL).equals("") 
 				//sometimes we get a null string
 				&& !iwc.getParameter(AscertiaConstants.UNSIGNED_DOCUMENT_URL).equals("null")) {
+			
 			documentURL = serverURL + CoreConstants.WEBDAV_SERVLET_URI + CoreConstants.SLASH 
 				+ iwc.getParameter(AscertiaConstants.UNSIGNED_DOCUMENT_URL);
 
@@ -168,8 +169,16 @@ public class AscertiaSigner extends Block {
 		String successPath = builderService.getUriToObject(AscertiaSigningForm.class, Arrays.asList(
 			new AdvancedProperty[] { new AdvancedProperty(PARAMETER_ACTION, String.valueOf(PARAMETER_SHOW_SIGNED_PDF)) }));
 
+		String errorPath = builderService.getUriToObject(AscertiaSigningForm.class, Arrays.asList(
+			new AdvancedProperty[] { new AdvancedProperty(PARAMETER_ACTION, String.valueOf(PARAMETER_SHOW_UNSIGNED_PDF)),
+					
+					new AdvancedProperty(AscertiaConstants.PARAM_VARIABLE_HASH,	iwc.getParameter(AscertiaConstants.PARAM_VARIABLE_HASH)),
+					new AdvancedProperty(AscertiaConstants.PARAM_TASK_ID, iwc.getParameter(AscertiaConstants.PARAM_TASK_ID))
+			}));
+		
 		script.addScriptLine("GoSign_SetResultPage('" + successPath + "');");
-
+		//script.addScriptLine("GoSign_SetErrorPage('" + errorPath + "');");
+		
 		mainDiv.add(script);
 
 		add(mainDiv);
@@ -231,12 +240,13 @@ public class AscertiaSigner extends Block {
 
 		BuilderService builderService = BuilderServiceFactory.getBuilderService(iwc);
 
-		String successPath = builderService.getUriToObject(AscertiaSigningForm.class, Arrays.asList(new AdvancedProperty[] { new AdvancedProperty(PARAMETER_ACTION, String.valueOf(PARAMETER_SHOW_SIGNED_PDF)) }));
+		String successPath = builderService.getUriToObject(AscertiaSigner.class, Arrays.asList(new AdvancedProperty[] { new AdvancedProperty(PARAMETER_ACTION, String.valueOf(PARAMETER_SHOW_SIGNED_PDF)) }));
 
-		String errorPath = builderService.getUriToObject(AscertiaSigningForm.class, Arrays.asList(
+		String errorPath = builderService.getUriToObject(AscertiaSigner.class, Arrays.asList(
 			new AdvancedProperty[] { new AdvancedProperty(PARAMETER_ACTION, String.valueOf(PARAMETER_SHOW_UNSIGNED_PDF)),
-					new AdvancedProperty(AscertiaConstants.PARAM_TASK_ID, iwc.getParameter(AscertiaConstants.PARAM_TASK_ID)),
-					new AdvancedProperty(AscertiaConstants.PARAM_VARIABLE_HASH,	iwc.getParameter(AscertiaConstants.PARAM_VARIABLE_HASH))
+					
+					new AdvancedProperty(AscertiaConstants.PARAM_VARIABLE_HASH,	iwc.getParameter(AscertiaConstants.PARAM_VARIABLE_HASH)),
+					new AdvancedProperty(AscertiaConstants.PARAM_TASK_ID, iwc.getParameter(AscertiaConstants.PARAM_TASK_ID))
 			}));
 		
 		addCertificatesList(form);
