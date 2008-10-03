@@ -17,14 +17,20 @@ function embedAscertiaApplet(URLToParentJSFolder,formName){
 
 function signDocument(successPage,errorPage, loadingMessage){
 	showLoadingMessage(loadingMessage);
-	var result = GoSign_SignDocument(); 
 	
-	if( result != true){ 
-	  //alert(GoSign_GetErrorCode()+GoSign_GetErrorReason()); 
-		window.location.href = errorPage+'&errorReason='+GoSign_GetErrorReason();
-	 }else{
-		 window.location.href =successPage;
-	}
+	var id = window.setTimeout(function() {
+		window.clearTimeout(id);
+		
+		var result = GoSign_SignDocument(); 
+		
+		if( result != true){ 
+		  //alert(GoSign_GetErrorCode()+GoSign_GetErrorReason()); 
+			window.location.href = errorPage+'&errorReason='+GoSign_GetErrorReason();
+		 }else{
+			window.location.href = successPage;
+		}
+	},10);
+	
 }
 
 window.addEvent('domready', function() {

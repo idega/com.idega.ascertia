@@ -149,6 +149,8 @@ public class AscertiaSigner extends Block {
 		mainDiv.add(PresentationUtil.getJavaScriptSourceLine(bundle.getResourceURIWithoutContextPath("/javascript/AscertiaHelper.js")));
 
 		mainDiv.add(PresentationUtil.getCssLine(bundle.getResourceURIWithoutContextPath("/style/ascertia.css"), true));
+		mainDiv.add(PresentationUtil.getCssLine(iwc.getIWMainApplication().
+				getBundle(CoreConstants.CORE_IW_BUNDLE_IDENTIFIER).getVirtualPathWithFileNameString("/style/iw_core.css"), true));
 
 		// Frame for document to be signed
 		//IFrame documentFrame = new IFrame("document_view_frame", documentURL);
