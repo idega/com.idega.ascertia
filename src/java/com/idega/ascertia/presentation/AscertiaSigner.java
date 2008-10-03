@@ -268,7 +268,7 @@ public class AscertiaSigner extends Block {
 		String serverURL = iwc.getServerURL();
 		serverURL = (serverURL.endsWith("/")) ? serverURL.substring(0, serverURL.length() - 1) : serverURL;
 
-		String documentURL = serverURL + CoreConstants.WEBDAV_SERVLET_URI + CoreConstants.CONTENT_PATH + CoreConstants.SLASH + "xforms/pdf/signed/" + iwc.getApplicationAttribute(AscertiaConstants.SIGNED_DOCUMENT_URL);
+		String documentURL = serverURL + CoreConstants.WEBDAV_SERVLET_URI + CoreConstants.CONTENT_PATH + CoreConstants.SLASH + "xforms/pdf/signed/" +"SignedDoc.pdf" /*iwc.getApplicationAttribute(AscertiaConstants.SIGNED_DOCUMENT_URL)*/;
 
 		Layer mainDiv = new Layer();
 
@@ -285,9 +285,9 @@ public class AscertiaSigner extends Block {
 		mainDiv.add(headerDiv);
 
 		//Not showing signed pdf atm
-		/*IFrame frame = new IFrame("signedDocument", documentURL);
+		IFrame frame = new IFrame("signedDocument", documentURL);
 		frame.setStyleClass("pdf_frame");
-		mainDiv.add(frame);*/
+		mainDiv.add(frame);
 
 		Layer downLoadDiv = new Layer();
 		downLoadDiv.setStyleClass("under_frame_layer");

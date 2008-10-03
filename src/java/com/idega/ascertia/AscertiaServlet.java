@@ -332,7 +332,7 @@ public class AscertiaServlet extends HttpServlet {
 						rawPdfFile);
 				emptySigFieldRequest.overrideProfileAttribute(
 						SigningRequest.SIGNING_REASON, "Testing");
-				logger.log(Level.INFO,"\nA request has been sent to create blank signature(s) on the PDF. Waiting for response...");
+				logger.log(Level.INFO,"A request has been sent to create blank signature(s) on the PDF. Waiting for response...");
 
 				String EMPTY_SIGNATURE_URL = ADSS_URL + "esi";
 
@@ -406,7 +406,7 @@ public class AscertiaServlet extends HttpServlet {
 			 */
 
 			else {
-
+				
 				logger.log(Level.INFO,"Reading signature bytes");
 
 				session = request.getSession(false);
@@ -421,7 +421,6 @@ public class AscertiaServlet extends HttpServlet {
 				byte[] byte_buffer = new byte[128];
 				int i_read = 0;
 				while ((i_read = obj_inputStream.read(byte_buffer)) > 0) {
-					System.out.println("Read : " + i_read);
 					obj_bos.write(byte_buffer, 0, i_read);
 
 				}
@@ -451,12 +450,15 @@ public class AscertiaServlet extends HttpServlet {
 
 				if (signatureAssemblyResponse.isResponseSuccessfull()) {
 					
-					//writing to disk
 					
+					//writing to disk
+					signatureAssemblyResponse
+							.writeSignedPDFTo(str_signedDocPath);
 					isResponseSuccessfull = true;
 					signedDocument = signatureAssemblyResponse
 							.getSignedDocument();
 					logger.log(Level.INFO,"Documend successfully signed");
+					writeToSlide(signedDocument,"SignedDoc.pdf");
 					/*
 					FacesContext fctx = WFUtil.createFacesContext(request.getSession().getServletContext(), request, response);
 					IWContext iwc = IWContext.getIWContext(fctx);
@@ -486,7 +488,7 @@ public class AscertiaServlet extends HttpServlet {
 			}
 
 			/* Sending the response back to the GoSign applet */
-
+			
 			if (isResponseSuccessfull) {
 
 				/* Setting response headers */
@@ -531,7 +533,7 @@ public class AscertiaServlet extends HttpServlet {
 				}
 
 			}
-
+			
 		} catch (Exception ex) {
 
 			ex.printStackTrace();
