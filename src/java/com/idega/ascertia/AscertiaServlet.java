@@ -64,6 +64,17 @@ public class AscertiaServlet extends HttpServlet {
 	@Autowired
 	private BPMFactory bpmFactory;
 	
+	@Autowired
+	private AscertiaDataPull ascertiaDataPull;
+	
+	public AscertiaDataPull getAscertiaDataPull() {
+		return ascertiaDataPull;
+	}
+
+	public void setAscertiaDataPull(AscertiaDataPull ascertiaDataPull) {
+		this.ascertiaDataPull = ascertiaDataPull;
+	}
+
 	public BPMFactory getBpmFactory() {
 		return bpmFactory;
 	}
@@ -580,7 +591,8 @@ public class AscertiaServlet extends HttpServlet {
 
 	}
 	
-	private void saveSignedPDFAttachment(IWContext iwc, BinaryVariable binaryVariable,long taskInstanceId, Integer binaryVariableHash,byte[] signedPDF) throws Exception{
+	private void saveSignedPDFAttachment(IWContext iwc, BinaryVariable binaryVariable,long taskInstanceId, 
+			Integer binaryVariableHash,byte[] signedPDF) throws Exception{
 		
 		
 		TaskInstanceW taskInstance = getBpmFactory().getProcessManagerByTaskInstanceId(taskInstanceId)
@@ -596,9 +608,7 @@ public class AscertiaServlet extends HttpServlet {
 		try {
 			String description = iwc.getIWMainApplication().getBundle("com.idega.ascertia").
 			getResourceBundle(iwc).getLocalizedString("signed", "Signed")+ " " + binaryVariable.getDescription();
-			
-			
-			
+						
 			BinaryVariable signedBinaryVariable = taskInstance.addAttachment(variable, fileName, description, inputStream);
 			
 			signedBinaryVariable.setSigned(true);
@@ -607,8 +617,19 @@ public class AscertiaServlet extends HttpServlet {
 			binaryVariable.setHidden(true);
 			binaryVariable.store();
 			
+			VariablesHandler variablesHandler = getVariablesHandler(iwc.getServletContext());
+			
+			inputStream = variablesHandler.getBinaryVariablesHandler().getBinaryVariableContent(binaryVariable);
+			
+			AscertiaData data = new AscertiaData();
+			data.setDocumentName(fileName);
+			data.setInputStream(inputStream);
+			
+			
+			getAscertiaDataPull().push("tmpId", data);
+			
 		} catch(Exception e) {
-			logger.log(Level.SEVERE, "Unable to set binary variable for task instance: " + taskInstanceId, e);
+			logger.log(Level.SEVERE, "Unable to set binary variable with signed document for task instance: " + taskInstanceId, e);
 			throw new Exception(e);
 			
 		} 
