@@ -15,7 +15,6 @@ import java.io.OutputStream;
 import java.net.URL;
 import java.util.List;
 import java.util.logging.Level;
-import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
 import javax.faces.context.FacesContext;
@@ -28,7 +27,6 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.bouncycastle.util.encoders.Base64;
-import org.jbpm.taskmgmt.exe.TaskInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.ascertia.adss.client.api.DocumentHashingRequest;
@@ -42,9 +40,7 @@ import com.idega.block.process.variables.Variable;
 import com.idega.block.process.variables.VariableDataType;
 import com.idega.business.IBOLookup;
 import com.idega.core.file.util.MimeTypeUtil;
-import com.idega.idegaweb.IWMainApplication;
-import com.idega.jbpm.artifacts.presentation.ProcessArtifacts;
-import com.idega.jbpm.exe.ProcessManager;
+import com.idega.jbpm.exe.BPMFactory;
 import com.idega.jbpm.exe.TaskInstanceW;
 import com.idega.jbpm.variables.BinaryVariable;
 import com.idega.jbpm.variables.VariablesHandler;
@@ -66,20 +62,22 @@ public class AscertiaServlet extends HttpServlet {
 	
 	
 	@Autowired
-	private ProcessManager processManager;
+	private BPMFactory bpmFactory;
+	
+	public BPMFactory getBpmFactory() {
+		return bpmFactory;
+	}
+
+	public void setBpmFactory(BPMFactory bpmFactory) {
+		this.bpmFactory = bpmFactory;
+	}
 
 	// Initialize global variables
 
-	public ProcessManager getProcessManager() {
-		return processManager;
-	}
-
-	public void setProcessManager(ProcessManager processManager) {
-		this.processManager = processManager;
-	}
-
 	public void init(ServletConfig a_objServletConfig) throws ServletException {
-
+		
+		ELUtil.getInstance().autowire(this);
+		
 		super.init(a_objServletConfig);
 
 		System.out.println("Asctertia servlet started");
@@ -87,6 +85,8 @@ public class AscertiaServlet extends HttpServlet {
 	}
 
 	// Process the HTTP Get request
+
+	
 
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
@@ -452,30 +452,29 @@ public class AscertiaServlet extends HttpServlet {
 					
 					
 					//writing to disk
-					signatureAssemblyResponse
-							.writeSignedPDFTo(str_signedDocPath);
+//					signatureAssemblyResponse
+//							.writeSignedPDFTo(str_signedDocPath);
 					isResponseSuccessfull = true;
 					signedDocument = signatureAssemblyResponse
 							.getSignedDocument();
 					logger.log(Level.INFO,"Documend successfully signed");
 					writeToSlide(signedDocument,"SignedDoc.pdf");
-					/*
+					
 					FacesContext fctx = WFUtil.createFacesContext(request.getSession().getServletContext(), request, response);
 					IWContext iwc = IWContext.getIWContext(fctx);
 					
 					
-					Integer variableHash = Integer
-					.valueOf(request
-							.getParameter(AscertiaConstants.PARAM_VARIABLE_HASH));
-					Long taskInstanceId = Long
-						.valueOf(request
-							.getParameter(AscertiaConstants.PARAM_TASK_ID));
+					
+					Integer variableHash = (Integer)session.getAttribute(AscertiaConstants.PARAM_VARIABLE_HASH);
+					Long taskInstanceId = (Long)session.getAttribute(AscertiaConstants.PARAM_TASK_ID);
 
 					VariablesHandler variablesHandler = getVariablesHandler(iwc
 						.getServletContext());
 
 					BinaryVariable binaryVariable = getBinVar(variablesHandler,
-						taskInstanceId, variableHash);*/
+						taskInstanceId, variableHash);
+					
+					saveSignedPDFAttachment(iwc, binaryVariable, taskInstanceId, variableHash, signedDocument);
 					
 					
 					
@@ -582,22 +581,37 @@ public class AscertiaServlet extends HttpServlet {
 
 	}
 	
-	private void saveSignedPDFAttachment(BinaryVariable binaryVariable,long taskInstanceId, Integer binaryVariableHash,byte[] signedPDF){
+	private void saveSignedPDFAttachment(IWContext iwc, BinaryVariable binaryVariable,long taskInstanceId, Integer binaryVariableHash,byte[] signedPDF) throws Exception{
 		
 		
-		TaskInstanceW taskInstance = getProcessManager().getTaskInstance(taskInstanceId);
+		TaskInstanceW taskInstance = getBpmFactory().getProcessManagerByTaskInstanceId(taskInstanceId)
+				.getTaskInstance(taskInstanceId);
 		
 
 		String fileName = binaryVariable.getFileName().replace(".pdf", "_signed.pdf");
 		
 		InputStream inputStream = new ByteArrayInputStream(signedPDF);
-				
+	
+		Variable variable = new Variable("signed_pdf_document_task",VariableDataType.FILE);
 		
 		try {
-			taskInstance.addAttachment((Variable)binaryVariable, fileName, binaryVariable.getDescription(), inputStream);
+			String description = iwc.getIWMainApplication().getBundle("com.idega.ascertia").
+			getResourceBundle(iwc).getLocalizedString("signed", "Signed")+ " " + binaryVariable.getDescription();
+			
+			
+			
+			BinaryVariable signedBinaryVariable = taskInstance.addAttachment(variable, fileName, description, inputStream);
+			
+			signedBinaryVariable.setSigned(true);
+			signedBinaryVariable.store();
+			
+			binaryVariable.setHidden(true);
+			binaryVariable.store();
+			
 		} catch(Exception e) {
-			//logger.log(Level.SEVERE, "Unable to set binary variable for task instance: " + taskInstanceId, e);
-			//return null;
+			logger.log(Level.SEVERE, "Unable to set binary variable for task instance: " + taskInstanceId, e);
+			throw new Exception(e);
+			
 		} 
 		
 	}
