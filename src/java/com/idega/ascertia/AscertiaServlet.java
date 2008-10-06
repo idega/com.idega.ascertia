@@ -457,13 +457,11 @@ public class AscertiaServlet extends HttpServlet {
 					isResponseSuccessfull = true;
 					signedDocument = signatureAssemblyResponse
 							.getSignedDocument();
-					logger.log(Level.INFO,"Documend successfully signed");
-					writeToSlide(signedDocument,"SignedDoc.pdf");
+					
+					//writeToSlide(signedDocument, str_signedDocPath);
 					
 					FacesContext fctx = WFUtil.createFacesContext(request.getSession().getServletContext(), request, response);
 					IWContext iwc = IWContext.getIWContext(fctx);
-					
-					
 					
 					Integer variableHash = (Integer)session.getAttribute(AscertiaConstants.PARAM_VARIABLE_HASH);
 					Long taskInstanceId = (Long)session.getAttribute(AscertiaConstants.PARAM_TASK_ID);
@@ -476,6 +474,7 @@ public class AscertiaServlet extends HttpServlet {
 					
 					saveSignedPDFAttachment(iwc, binaryVariable, taskInstanceId, variableHash, signedDocument);
 					
+					logger.log(Level.INFO,"Documend successfully signed");
 					
 					
 				} else {
