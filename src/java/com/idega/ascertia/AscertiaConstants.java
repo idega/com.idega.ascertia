@@ -7,6 +7,7 @@ public class AscertiaConstants {
 	public static final String DOCUMENT_URL_ID = "document_url_id";
 	public static final String PARAM_TASK_ID = "task_id";
 	public static final String PARAM_VARIABLE_HASH = "variable_hash";
+	public static final String PARAM_CONVERSATION_ID = "conversation_id";
 	
 	
 	

@@ -5,6 +5,7 @@ import java.net.URLEncoder;
 import java.rmi.RemoteException;
 import java.util.Arrays;
 
+import org.apache.commons.lang.RandomStringUtils;
 import org.apache.myfaces.renderkit.html.util.AddResource;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -188,18 +189,26 @@ public class AscertiaSigner extends Block {
 		form.setId(getFormName());
 		form.setMarkupAttribute("name", getFormName());
 		
+		HiddenInput conversationId = new HiddenInput();
+		conversationId.setName(AscertiaConstants.PARAM_CONVERSATION_ID);
+		conversationId.setId(AscertiaConstants.PARAM_CONVERSATION_ID);
+		
+		String conversationStr = RandomStringUtils.randomAlphanumeric(30);
+		conversationId.setValue(conversationStr);
+		
+		form.add(conversationId);
 		
 		
 		if(documentURL != null){
-			addDocumentURLField(iwc, form, documentURL);
+			addDocumentURLField(iwc, form, documentURL,conversationStr);
 		}else{
-			addTaskIdAndHashValueFields(iwc, form);
+			addTaskIdAndHashValueFields(iwc, form,conversationStr);
 		}
 	
 		return form;
 	}
 	
-	protected void addDocumentURLField(IWContext iwc, Form form, String documentURL) throws RemoteException{
+	protected void addDocumentURLField(IWContext iwc, Form form, String documentURL, String conversationId) throws RemoteException{
 		HiddenInput hiddenInputDocumontURL = new HiddenInput();
 		hiddenInputDocumontURL.setName(AscertiaConstants.DOCUMENT_URL_ID);
 		hiddenInputDocumontURL.setId(AscertiaConstants.DOCUMENT_URL_ID);
@@ -210,7 +219,9 @@ public class AscertiaSigner extends Block {
 		
 		BuilderService builderService = BuilderServiceFactory.getBuilderService(iwc);
 
-		String successPath = builderService.getUriToObject(AscertiaSigningForm.class, Arrays.asList(new AdvancedProperty[] { new AdvancedProperty(PARAMETER_ACTION, String.valueOf(PARAMETER_SHOW_SIGNED_PDF)) }));
+		String successPath = builderService.getUriToObject(AscertiaSigningForm.class, Arrays.asList(new AdvancedProperty[] { 
+				new AdvancedProperty(PARAMETER_ACTION, String.valueOf(PARAMETER_SHOW_SIGNED_PDF)),
+				new AdvancedProperty(AscertiaConstants.PARAM_CONVERSATION_ID, conversationId) }));
 
 		String errorPath = builderService.getUriToObject(AscertiaSigningForm.class, Arrays.asList(new AdvancedProperty[] { new AdvancedProperty(PARAMETER_ACTION, String.valueOf(PARAMETER_SHOW_UNSIGNED_PDF)), new AdvancedProperty(AscertiaConstants.UNSIGNED_DOCUMENT_URL, documentURL) }));
 		
@@ -222,7 +233,7 @@ public class AscertiaSigner extends Block {
 		form.add(sign);
 	}
 	
-	protected void addTaskIdAndHashValueFields(IWContext iwc, Form form) throws RemoteException{
+	protected void addTaskIdAndHashValueFields(IWContext iwc, Form form, String conversationId) throws RemoteException{
 		HiddenInput hiddenInputVariableHash = new HiddenInput();
 		hiddenInputVariableHash.setID(AscertiaConstants.PARAM_VARIABLE_HASH);
 		hiddenInputVariableHash.setName(AscertiaConstants.PARAM_VARIABLE_HASH);
@@ -240,7 +251,8 @@ public class AscertiaSigner extends Block {
 		BuilderService builderService = BuilderServiceFactory.getBuilderService(iwc);
 
 		String successPath = builderService.getUriToObject(AscertiaSigner.class, Arrays.asList(new AdvancedProperty[] {
-				new AdvancedProperty(PARAMETER_ACTION, String.valueOf(PARAMETER_SHOW_SIGNED_PDF)) }));
+				new AdvancedProperty(PARAMETER_ACTION, String.valueOf(PARAMETER_SHOW_SIGNED_PDF)),
+				new AdvancedProperty(AscertiaConstants.PARAM_CONVERSATION_ID, conversationId) }));
 
 		String errorPath = builderService.getUriToObject(AscertiaSigner.class, Arrays.asList(
 			new AdvancedProperty[] { new AdvancedProperty(PARAMETER_ACTION, String.valueOf(PARAMETER_SHOW_UNSIGNED_PDF)),
@@ -298,7 +310,7 @@ public class AscertiaSigner extends Block {
 		
 		DownloadLink pdfLink = new DownloadLink(getLocalizedString("download", "Download", iwc));
 		pdfLink.setMediaWriterClass(AscertiaPDFWrinter.class);
-		pdfLink.addParameter(AscertiaPDFWrinter.PARAM_CONVERSATION_ID, "tmpId");
+		pdfLink.addParameter(AscertiaPDFWrinter.PARAM_CONVERSATION_ID, iwc.getParameter(AscertiaConstants.PARAM_CONVERSATION_ID));
 
 		downLoadDiv.add(pdfLink);
 

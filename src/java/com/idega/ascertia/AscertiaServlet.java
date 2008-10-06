@@ -318,6 +318,7 @@ public class AscertiaServlet extends HttpServlet {
 					
 					session.setAttribute(AscertiaConstants.PARAM_VARIABLE_HASH, variableHash);
 					session.setAttribute(AscertiaConstants.PARAM_TASK_ID, taskInstanceId);
+					
 				//if document url was passed
 				} else {
 
@@ -385,7 +386,8 @@ public class AscertiaServlet extends HttpServlet {
 							SigningRequest.CONTACT_INFO, "asd");*/
 
 					/* Sending request to the ADSS server */
-
+					
+					session.setAttribute(AscertiaConstants.PARAM_CONVERSATION_ID, request.getParameter(AscertiaConstants.PARAM_CONVERSATION_ID));
 					DocumentHashingResponse documentHashingResponse = (DocumentHashingResponse) documentHashingRequest
 							.send(HASHING_URL);
 
@@ -397,7 +399,6 @@ public class AscertiaServlet extends HttpServlet {
 								.getDocumentHash();
 						session.setAttribute("FileName", fileName);
 						session.setAttribute("DocumentId",
-
 						documentHashingResponse.getDocumentId());
 						logger.log(Level.INFO,"Document hashing was successfull");
 
@@ -483,7 +484,8 @@ public class AscertiaServlet extends HttpServlet {
 					BinaryVariable binaryVariable = getBinVar(variablesHandler,
 						taskInstanceId, variableHash);
 					
-					saveSignedPDFAttachment(iwc, binaryVariable, taskInstanceId, variableHash, signedDocument);
+					saveSignedPDFAttachment(iwc, binaryVariable, taskInstanceId, variableHash, signedDocument,
+							(String)session.getAttribute(AscertiaConstants.PARAM_CONVERSATION_ID));
 					
 					logger.log(Level.INFO,"Documend successfully signed");
 					
@@ -592,7 +594,7 @@ public class AscertiaServlet extends HttpServlet {
 	}
 	
 	private void saveSignedPDFAttachment(IWContext iwc, BinaryVariable binaryVariable,long taskInstanceId, 
-			Integer binaryVariableHash,byte[] signedPDF) throws Exception{
+			Integer binaryVariableHash,byte[] signedPDF, String conversationId) throws Exception{
 		
 		
 		TaskInstanceW taskInstance = getBpmFactory().getProcessManagerByTaskInstanceId(taskInstanceId)
@@ -626,7 +628,7 @@ public class AscertiaServlet extends HttpServlet {
 			data.setInputStream(inputStream);
 			
 			
-			getAscertiaDataPull().push("tmpId", data);
+			getAscertiaDataPull().push(conversationId, data);
 			
 		} catch(Exception e) {
 			logger.log(Level.SEVERE, "Unable to set binary variable with signed document for task instance: " + taskInstanceId, e);

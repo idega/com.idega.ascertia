@@ -32,7 +32,7 @@ public class AscertiaDataPull {
 	
 	public AscertiaData pop(String conversationId){
 		AscertiaData data = getData().get(conversationId);
-		getData().remove(conversationId);
+		//getData().remove(conversationId);
 		return data;
 	}
 }
