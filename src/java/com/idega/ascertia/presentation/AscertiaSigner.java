@@ -6,7 +6,7 @@ import java.util.Arrays;
 import org.apache.commons.lang.RandomStringUtils;
 
 import com.idega.ascertia.AscertiaConstants;
-import com.idega.ascertia.AscertiaPDFWrinter;
+import com.idega.ascertia.AscertiaPDFWriter;
 import com.idega.block.web2.business.Web2Business;
 import com.idega.builder.bean.AdvancedProperty;
 import com.idega.core.builder.business.BuilderService;
@@ -304,7 +304,7 @@ public class AscertiaSigner extends Block {
 
 		
 		DownloadLink pdfLink = new DownloadLink(getLocalizedString("download", "Download", iwc));
-		pdfLink.setMediaWriterClass(AscertiaPDFWrinter.class);
+		pdfLink.setMediaWriterClass(AscertiaPDFWriter.class);
 		
 
 		downLoadDiv.add(pdfLink);

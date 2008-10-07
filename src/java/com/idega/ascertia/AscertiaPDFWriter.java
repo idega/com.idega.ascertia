@@ -17,11 +17,11 @@ import com.idega.presentation.IWContext;
 import com.idega.util.FileUtil;
 import com.idega.util.expression.ELUtil;
 
-public class AscertiaPDFWrinter extends DownloadWriter{
+public class AscertiaPDFWriter extends DownloadWriter{
 	
 	public static final String PARAM_CONVERSATION_ID = "conversation_id";
 
-	private static final Logger logger = Logger.getLogger(AscertiaPDFWrinter.class.getName());
+	private static final Logger logger = Logger.getLogger(AscertiaPDFWriter.class.getName());
 	
 	private InputStream inputStream;
 		
