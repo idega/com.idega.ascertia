@@ -10,12 +10,9 @@ import java.util.logging.Logger;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.springframework.beans.factory.annotation.Autowired;
-
 import com.idega.io.DownloadWriter;
 import com.idega.presentation.IWContext;
 import com.idega.util.FileUtil;
-import com.idega.util.expression.ELUtil;
 
 public class AscertiaPDFWriter extends DownloadWriter{
 	

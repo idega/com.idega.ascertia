@@ -3,8 +3,6 @@ package com.idega.ascertia.presentation;
 import java.rmi.RemoteException;
 import java.util.Arrays;
 
-import org.apache.commons.lang.RandomStringUtils;
-
 import com.idega.ascertia.AscertiaConstants;
 import com.idega.ascertia.AscertiaPDFWriter;
 import com.idega.block.web2.business.Web2Business;
@@ -15,7 +13,6 @@ import com.idega.idegaweb.IWBundle;
 import com.idega.presentation.Block;
 import com.idega.presentation.IWContext;
 import com.idega.presentation.Layer;
-import com.idega.presentation.PresentationObject;
 import com.idega.presentation.Script;
 import com.idega.presentation.text.DownloadLink;
 import com.idega.presentation.text.Heading5;
@@ -24,7 +21,6 @@ import com.idega.presentation.text.Text;
 import com.idega.presentation.ui.DropdownMenu;
 import com.idega.presentation.ui.Form;
 import com.idega.presentation.ui.HiddenInput;
-import com.idega.presentation.ui.IFrame;
 import com.idega.util.CoreConstants;
 import com.idega.util.PresentationUtil;
 import com.idega.util.expression.ELUtil;

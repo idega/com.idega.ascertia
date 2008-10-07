@@ -40,6 +40,7 @@ import com.idega.block.process.variables.Variable;
 import com.idega.block.process.variables.VariableDataType;
 import com.idega.business.IBOLookup;
 import com.idega.core.file.util.MimeTypeUtil;
+import com.idega.idegaweb.IWMainApplication;
 import com.idega.jbpm.exe.BPMFactory;
 import com.idega.jbpm.exe.TaskInstanceW;
 import com.idega.jbpm.variables.BinaryVariable;
@@ -59,6 +60,10 @@ public class AscertiaServlet extends HttpServlet {
 	private static final String CONTENT_TYPE = "text/xml";
 	
 	private Logger logger = Logger.getLogger(AscertiaServlet.class.getName());
+	
+	public static final String PROP_ADSS_SERVER_URL = "adss_server_url";
+	public static final String PROP_SIGNATURE_PROFILE="signature_profile";
+	public static final String PROP_EMPTY_SIGNATURE_PROFILE = "empty_signature_profile";
 	
 	
 	@Autowired
@@ -116,10 +121,8 @@ public class AscertiaServlet extends HttpServlet {
 		 * URL of deployed PDF Signer Server
 		 */
 		// TODO: get dinamically
-		String ADSS_URL = "http://82.221.28.123/adss/signing/";// getServletContext
-		// ().
-		// getInitParameter
-		// ("ADSS_URL");
+		String ADSS_URL =IWMainApplication.getDefaultIWMainApplication().getSettings()
+			.getProperty(PROP_ADSS_SERVER_URL,"http://82.221.28.123/adss/signing/");
 		/**
 		 * 
 		 * URL of deployed PDF Signer Server, where Document Hashing's
@@ -151,12 +154,8 @@ public class AscertiaServlet extends HttpServlet {
 		 */
 
 		// TODO: get dinamically
-		String USER_PROFILE_ID = "adss:signing:profile:007";//getServletContext(
-		// )
-		// .getInitParameter
-		// (
-		// "USER_PROFILE_ID"
-		// );
+		String SIGNATURE_PROFILE =IWMainApplication.getDefaultIWMainApplication().getSettings()
+			.getProperty(PROP_SIGNATURE_PROFILE,"adss:signing:profile:007");
 
 		/* Printing the parameters' values on console */
 		
@@ -330,7 +329,8 @@ public class AscertiaServlet extends HttpServlet {
 				byte[] pdfFileWithEmptySignature = null;
 
 				EmptySignatureFieldRequest emptySigFieldRequest = new EmptySignatureFieldRequest(
-						"samples_test_client", "adss:signing:profile:005",
+						"samples_test_client", IWMainApplication.getDefaultIWMainApplication().getSettings()
+						.getProperty(PROP_EMPTY_SIGNATURE_PROFILE,"adss:signing:profile:005"),
 						rawPdfFile);
 				emptySigFieldRequest.overrideProfileAttribute(
 						SigningRequest.SIGNING_REASON, "Testing");
@@ -362,7 +362,7 @@ public class AscertiaServlet extends HttpServlet {
 					/* Constructing request for document hashing */
 
 					DocumentHashingRequest documentHashingRequest = new DocumentHashingRequest(
-							ORIGINATOR_ID, USER_PROFILE_ID,
+							ORIGINATOR_ID, SIGNATURE_PROFILE,
 							pdfFileWithEmptySignature, Base64
 									.decode(certificate));
 
