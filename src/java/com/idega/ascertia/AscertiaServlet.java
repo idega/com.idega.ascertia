@@ -64,16 +64,6 @@ public class AscertiaServlet extends HttpServlet {
 	@Autowired
 	private BPMFactory bpmFactory;
 	
-	@Autowired
-	private AscertiaDataPull ascertiaDataPull;
-	
-	public AscertiaDataPull getAscertiaDataPull() {
-		return ascertiaDataPull;
-	}
-
-	public void setAscertiaDataPull(AscertiaDataPull ascertiaDataPull) {
-		this.ascertiaDataPull = ascertiaDataPull;
-	}
 
 	public BPMFactory getBpmFactory() {
 		return bpmFactory;
@@ -387,7 +377,6 @@ public class AscertiaServlet extends HttpServlet {
 
 					/* Sending request to the ADSS server */
 					
-					session.setAttribute(AscertiaConstants.PARAM_CONVERSATION_ID, request.getParameter(AscertiaConstants.PARAM_CONVERSATION_ID));
 					DocumentHashingResponse documentHashingResponse = (DocumentHashingResponse) documentHashingRequest
 							.send(HASHING_URL);
 
@@ -484,8 +473,7 @@ public class AscertiaServlet extends HttpServlet {
 					BinaryVariable binaryVariable = getBinVar(variablesHandler,
 						taskInstanceId, variableHash);
 					
-					saveSignedPDFAttachment(iwc, binaryVariable, taskInstanceId, variableHash, signedDocument,
-							(String)session.getAttribute(AscertiaConstants.PARAM_CONVERSATION_ID));
+					saveSignedPDFAttachment(iwc, binaryVariable, taskInstanceId, variableHash, signedDocument);
 					
 					logger.log(Level.INFO,"Documend successfully signed");
 					
@@ -594,7 +582,7 @@ public class AscertiaServlet extends HttpServlet {
 	}
 	
 	private void saveSignedPDFAttachment(IWContext iwc, BinaryVariable binaryVariable,long taskInstanceId, 
-			Integer binaryVariableHash,byte[] signedPDF, String conversationId) throws Exception{
+			Integer binaryVariableHash,byte[] signedPDF) throws Exception{
 		
 		
 		TaskInstanceW taskInstance = getBpmFactory().getProcessManagerByTaskInstanceId(taskInstanceId)
@@ -627,8 +615,9 @@ public class AscertiaServlet extends HttpServlet {
 			data.setDocumentName(fileName);
 			data.setInputStream(inputStream);
 			
+			iwc.getSession().setAttribute(AscertiaConstants.PARAM_ASCERTIA_DATA, data);
 			
-			getAscertiaDataPull().push(conversationId, data);
+			//getAscertiaDataPull().put(conversationId, data);
 			
 		} catch(Exception e) {
 			logger.log(Level.SEVERE, "Unable to set binary variable with signed document for task instance: " + taskInstanceId, e);

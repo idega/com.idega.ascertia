@@ -1,19 +1,12 @@
 package com.idega.ascertia.presentation;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.rmi.RemoteException;
 import java.util.Arrays;
 
 import org.apache.commons.lang.RandomStringUtils;
-import org.apache.myfaces.renderkit.html.util.AddResource;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import com.idega.ascertia.AscertiaConstants;
-import com.idega.ascertia.AscertiaData;
-import com.idega.ascertia.AscertiaDataPull;
 import com.idega.ascertia.AscertiaPDFWrinter;
-import com.idega.block.pdf.PDFWriter;
 import com.idega.block.web2.business.Web2Business;
 import com.idega.builder.bean.AdvancedProperty;
 import com.idega.core.builder.business.BuilderService;
@@ -22,6 +15,7 @@ import com.idega.idegaweb.IWBundle;
 import com.idega.presentation.Block;
 import com.idega.presentation.IWContext;
 import com.idega.presentation.Layer;
+import com.idega.presentation.PresentationObject;
 import com.idega.presentation.Script;
 import com.idega.presentation.text.DownloadLink;
 import com.idega.presentation.text.Heading5;
@@ -31,7 +25,6 @@ import com.idega.presentation.ui.DropdownMenu;
 import com.idega.presentation.ui.Form;
 import com.idega.presentation.ui.HiddenInput;
 import com.idega.presentation.ui.IFrame;
-import com.idega.presentation.ui.TextInput;
 import com.idega.util.CoreConstants;
 import com.idega.util.PresentationUtil;
 import com.idega.util.expression.ELUtil;
@@ -187,28 +180,18 @@ public class AscertiaSigner extends Block {
 	protected Form addForm(IWContext iwc, String documentURL) throws RemoteException {
 		Form form = new Form();
 		form.setId(getFormName());
-		form.setMarkupAttribute("name", getFormName());
-		
-		HiddenInput conversationId = new HiddenInput();
-		conversationId.setName(AscertiaConstants.PARAM_CONVERSATION_ID);
-		conversationId.setId(AscertiaConstants.PARAM_CONVERSATION_ID);
-		
-		String conversationStr = RandomStringUtils.randomAlphanumeric(30);
-		conversationId.setValue(conversationStr);
-		
-		form.add(conversationId);
-		
+		form.setMarkupAttribute("name", getFormName());		
 		
 		if(documentURL != null){
-			addDocumentURLField(iwc, form, documentURL,conversationStr);
+			addDocumentURLField(iwc, form, documentURL);
 		}else{
-			addTaskIdAndHashValueFields(iwc, form,conversationStr);
+			addTaskIdAndHashValueFields(iwc, form);
 		}
 	
 		return form;
 	}
 	
-	protected void addDocumentURLField(IWContext iwc, Form form, String documentURL, String conversationId) throws RemoteException{
+	protected void addDocumentURLField(IWContext iwc, Form form, String documentURL) throws RemoteException{
 		HiddenInput hiddenInputDocumontURL = new HiddenInput();
 		hiddenInputDocumontURL.setName(AscertiaConstants.DOCUMENT_URL_ID);
 		hiddenInputDocumontURL.setId(AscertiaConstants.DOCUMENT_URL_ID);
@@ -220,8 +203,7 @@ public class AscertiaSigner extends Block {
 		BuilderService builderService = BuilderServiceFactory.getBuilderService(iwc);
 
 		String successPath = builderService.getUriToObject(AscertiaSigningForm.class, Arrays.asList(new AdvancedProperty[] { 
-				new AdvancedProperty(PARAMETER_ACTION, String.valueOf(PARAMETER_SHOW_SIGNED_PDF)),
-				new AdvancedProperty(AscertiaConstants.PARAM_CONVERSATION_ID, conversationId) }));
+				new AdvancedProperty(PARAMETER_ACTION, String.valueOf(PARAMETER_SHOW_SIGNED_PDF)) }));
 
 		String errorPath = builderService.getUriToObject(AscertiaSigningForm.class, Arrays.asList(new AdvancedProperty[] { new AdvancedProperty(PARAMETER_ACTION, String.valueOf(PARAMETER_SHOW_UNSIGNED_PDF)), new AdvancedProperty(AscertiaConstants.UNSIGNED_DOCUMENT_URL, documentURL) }));
 		
@@ -233,7 +215,7 @@ public class AscertiaSigner extends Block {
 		form.add(sign);
 	}
 	
-	protected void addTaskIdAndHashValueFields(IWContext iwc, Form form, String conversationId) throws RemoteException{
+	protected void addTaskIdAndHashValueFields(IWContext iwc, Form form) throws RemoteException{
 		HiddenInput hiddenInputVariableHash = new HiddenInput();
 		hiddenInputVariableHash.setID(AscertiaConstants.PARAM_VARIABLE_HASH);
 		hiddenInputVariableHash.setName(AscertiaConstants.PARAM_VARIABLE_HASH);
@@ -251,8 +233,7 @@ public class AscertiaSigner extends Block {
 		BuilderService builderService = BuilderServiceFactory.getBuilderService(iwc);
 
 		String successPath = builderService.getUriToObject(AscertiaSigner.class, Arrays.asList(new AdvancedProperty[] {
-				new AdvancedProperty(PARAMETER_ACTION, String.valueOf(PARAMETER_SHOW_SIGNED_PDF)),
-				new AdvancedProperty(AscertiaConstants.PARAM_CONVERSATION_ID, conversationId) }));
+				new AdvancedProperty(PARAMETER_ACTION, String.valueOf(PARAMETER_SHOW_SIGNED_PDF))}));
 
 		String errorPath = builderService.getUriToObject(AscertiaSigner.class, Arrays.asList(
 			new AdvancedProperty[] { new AdvancedProperty(PARAMETER_ACTION, String.valueOf(PARAMETER_SHOW_UNSIGNED_PDF)),
@@ -283,14 +264,28 @@ public class AscertiaSigner extends Block {
 		String serverURL = iwc.getServerURL();
 		serverURL = (serverURL.endsWith("/")) ? serverURL.substring(0, serverURL.length() - 1) : serverURL;
 
-		String documentURL = serverURL + CoreConstants.WEBDAV_SERVLET_URI + CoreConstants.CONTENT_PATH + CoreConstants.SLASH + "xforms/pdf/signed/" +"SignedDoc.pdf" /*iwc.getApplicationAttribute(AscertiaConstants.SIGNED_DOCUMENT_URL)*/;
+//		String documentURL =""; 
 
+//
+//		BuilderService builderService = BuilderServiceFactory
+//				.getBuilderService(iwc);		
+//		
+//		String pathToPDFSigner = builderService.getUriToObject(AscertiaPDFWrinter.class,
+//			Arrays.asList(new AdvancedProperty[] {
+//					new AdvancedProperty(AscertiaPDFWrinter.PARAM_CONVERSATION_ID, iwc.getParameter(AscertiaConstants.PARAM_CONVERSATION_ID)) 
+//			}));
+//	
+		
+		Script script = new Script();		
+		
 		Layer mainDiv = new Layer();
-
+		
 		mainDiv.add(PresentationUtil.getJavaScriptSourceLine(iwc.getIWMainApplication().getBundle(CoreConstants.CORE_IW_BUNDLE_IDENTIFIER).getVirtualPathWithFileNameString("iw_core.js")));
 
 		mainDiv.add(PresentationUtil.getCssLine(bundle.getResourceURIWithoutContextPath("/style/ascertia.css"), true));
 
+		mainDiv.add(script);
+		
 		mainDiv.setStyleClass("main_layer");
 
 		Layer headerDiv = new Layer();
@@ -299,10 +294,10 @@ public class AscertiaSigner extends Block {
 
 		mainDiv.add(headerDiv);
 
-		/*//Not showing signed pdf atm
-		IFrame frame = new IFrame("signedDocument", documentURL);
-		frame.setStyleClass("pdf_frame");
-		mainDiv.add(frame);*/
+//		//Not showing signed pdf atm
+//		IFrame frame = new IFrame("signedDocument", pathToPDFSigner);
+//		frame.setStyleClass("pdf_frame");
+//		mainDiv.add(frame);
 
 		Layer downLoadDiv = new Layer();
 		downLoadDiv.setStyleClass("under_frame_layer");
@@ -310,7 +305,7 @@ public class AscertiaSigner extends Block {
 		
 		DownloadLink pdfLink = new DownloadLink(getLocalizedString("download", "Download", iwc));
 		pdfLink.setMediaWriterClass(AscertiaPDFWrinter.class);
-		pdfLink.addParameter(AscertiaPDFWrinter.PARAM_CONVERSATION_ID, iwc.getParameter(AscertiaConstants.PARAM_CONVERSATION_ID));
+		
 
 		downLoadDiv.add(pdfLink);
 

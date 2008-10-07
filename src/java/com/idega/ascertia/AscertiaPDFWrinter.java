@@ -23,24 +23,13 @@ public class AscertiaPDFWrinter extends DownloadWriter{
 
 	private static final Logger logger = Logger.getLogger(AscertiaPDFWrinter.class.getName());
 	
-	@Autowired
-	private AscertiaDataPull ascertiaDataPull;
-	
 	private InputStream inputStream;
 		
-	public AscertiaDataPull getAscertiaDataPull() {
-		return ascertiaDataPull;
-	}
 
-	public void setAscertiaDataPull(AscertiaDataPull ascertiaDataPull) {
-		this.ascertiaDataPull = ascertiaDataPull;
-	}
 
 	@Override
 	public void init(HttpServletRequest req, IWContext iwc) {
-		ELUtil.getInstance().autowire(this);
-		String conversationId = iwc.getParameter(PARAM_CONVERSATION_ID);
-		AscertiaData ascertiaData = getAscertiaDataPull().pop(conversationId);
+		AscertiaData ascertiaData = (AscertiaData)iwc.getSession().getAttribute(AscertiaConstants.PARAM_ASCERTIA_DATA);
 		inputStream = ascertiaData.getInputStream();
 		
 		
