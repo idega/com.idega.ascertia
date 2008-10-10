@@ -4,12 +4,15 @@ import java.rmi.RemoteException;
 import java.util.Arrays;
 
 import com.idega.ascertia.AscertiaConstants;
+import com.idega.ascertia.AscertiaPDFPrinter;
 import com.idega.ascertia.AscertiaPDFWriter;
 import com.idega.block.web2.business.Web2Business;
 import com.idega.builder.bean.AdvancedProperty;
 import com.idega.core.builder.business.BuilderService;
 import com.idega.core.builder.business.BuilderServiceFactory;
 import com.idega.idegaweb.IWBundle;
+import com.idega.idegaweb.IWMainApplication;
+import com.idega.io.MediaWritable;
 import com.idega.presentation.Block;
 import com.idega.presentation.IWContext;
 import com.idega.presentation.Layer;
@@ -21,6 +24,7 @@ import com.idega.presentation.text.Text;
 import com.idega.presentation.ui.DropdownMenu;
 import com.idega.presentation.ui.Form;
 import com.idega.presentation.ui.HiddenInput;
+import com.idega.presentation.ui.IFrame;
 import com.idega.util.CoreConstants;
 import com.idega.util.PresentationUtil;
 import com.idega.util.expression.ELUtil;
@@ -147,9 +151,12 @@ public class AscertiaSigner extends Block {
 				getBundle(CoreConstants.CORE_IW_BUNDLE_IDENTIFIER).getVirtualPathWithFileNameString("/style/iw_core.css"), true));
 
 		// Frame for document to be signed
-		//IFrame documentFrame = new IFrame("document_view_frame", documentURL);
-		// documentFrame.setStyleClass("pdf_frame");
-		// mainDiv.add(documentFrame);
+		IFrame documentFrame = new IFrame("document_view_frame",iwc.getIWMainApplication().getMediaServletURI() + "?" + MediaWritable.PRM_WRITABLE_CLASS 
+			+ "="+ IWMainApplication.getEncryptedClassName(AscertiaPDFPrinter.class) + "&" + AscertiaConstants.PARAM_TASK_ID 
+			+ "=" + iwc.getParameter(AscertiaConstants.PARAM_TASK_ID) + "&" + AscertiaConstants.PARAM_VARIABLE_HASH + "=" 
+			+ iwc.getParameter(AscertiaConstants.PARAM_VARIABLE_HASH));
+		documentFrame.setStyleClass("pdf_frame");
+		mainDiv.add(documentFrame);
 
 		Layer signingLayer = new Layer();
 		signingLayer.add(addForm(iwc, documentURL));
@@ -290,10 +297,10 @@ public class AscertiaSigner extends Block {
 
 		mainDiv.add(headerDiv);
 
-//		//Not showing signed pdf atm
-//		IFrame frame = new IFrame("signedDocument", pathToPDFSigner);
-//		frame.setStyleClass("pdf_frame");
-//		mainDiv.add(frame);
+		//Not showing signed pdf atm
+		IFrame frame = new IFrame("signedDocument", iwc.getIWMainApplication().getMediaServletURI() + "?" + MediaWritable.PRM_WRITABLE_CLASS + "="+ IWMainApplication.getEncryptedClassName(AscertiaPDFPrinter.class));
+		frame.setStyleClass("pdf_frame");
+		mainDiv.add(frame);
 
 		Layer downLoadDiv = new Layer();
 		downLoadDiv.setStyleClass("under_frame_layer");

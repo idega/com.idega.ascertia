@@ -1,19 +1,17 @@
 package com.idega.ascertia;
 
-import java.io.InputStream;
 
 public class AscertiaData {
 
-	private String documentName;
-	private InputStream inputStream;
+	private String documentName;	
+	private byte [] byteDocument;
 	
 	
-	
-	public InputStream getInputStream() {
-		return inputStream;
+	public byte[] getByteDocument() {
+		return byteDocument;
 	}
-	public void setInputStream(InputStream inputStream) {
-		this.inputStream = inputStream;
+	public void setByteDocument(byte[] byteDocument) {
+		this.byteDocument = byteDocument;
 	}
 	public String getDocumentName() {
 		return documentName;

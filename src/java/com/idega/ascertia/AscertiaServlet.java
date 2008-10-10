@@ -48,6 +48,7 @@ import com.idega.jbpm.variables.VariablesHandler;
 import com.idega.presentation.IWContext;
 import com.idega.slide.business.IWSlideService;
 import com.idega.util.CoreConstants;
+import com.idega.util.StringUtil;
 import com.idega.util.expression.ELUtil;
 import com.idega.webface.WFUtil;
 
@@ -387,8 +388,7 @@ public class AscertiaServlet extends HttpServlet {
 						soapResponseBytes = documentHashingResponse
 								.getDocumentHash();
 						session.setAttribute("FileName", fileName);
-						session.setAttribute("DocumentId",
-						documentHashingResponse.getDocumentId());
+						session.setAttribute("DocumentId", documentHashingResponse.getDocumentId());
 						logger.log(Level.INFO,"Document hashing was successfull");
 
 					} else {
@@ -453,8 +453,8 @@ public class AscertiaServlet extends HttpServlet {
 					
 					
 					//writing to disk
-//					signatureAssemblyResponse
-//							.writeSignedPDFTo(str_signedDocPath);
+					signatureAssemblyResponse
+							.writeSignedPDFTo(str_signedDocPath);
 					isResponseSuccessfull = true;
 					signedDocument = signatureAssemblyResponse
 							.getSignedDocument();
@@ -597,7 +597,8 @@ public class AscertiaServlet extends HttpServlet {
 		
 		try {
 			String description = iwc.getIWMainApplication().getBundle("com.idega.ascertia").
-			getResourceBundle(iwc).getLocalizedString("signed", "Signed")+ " " + binaryVariable.getDescription();
+			getResourceBundle(iwc).getLocalizedString("signed", "Signed")+ " " 
+			+ (StringUtil.isEmpty(binaryVariable.getDescription()) ? binaryVariable.getFileName() : binaryVariable.getDescription());
 						
 			BinaryVariable signedBinaryVariable = taskInstance.addAttachment(variable, fileName, description, inputStream);
 			
@@ -609,11 +610,26 @@ public class AscertiaServlet extends HttpServlet {
 			
 			VariablesHandler variablesHandler = getVariablesHandler(iwc.getServletContext());
 			
-			inputStream = variablesHandler.getBinaryVariablesHandler().getBinaryVariableContent(binaryVariable);
+			inputStream = variablesHandler.getBinaryVariablesHandler().getBinaryVariableContent(signedBinaryVariable);
+			
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			byte buffer[] = new byte[1024];
+			int noRead = 0;
+			try {
+				noRead = inputStream.read(buffer, 0, 1024);
+				while (noRead != -1) {
+					baos.write(buffer, 0, noRead);
+					noRead = inputStream.read(buffer, 0, 1024);
+				}
+			} catch (IOException e) {
+				logger.log(Level.SEVERE, "Unable to read from input stream",e);
+				inputStream = null;
+				return;
+			}
 			
 			AscertiaData data = new AscertiaData();
 			data.setDocumentName(fileName);
-			data.setInputStream(inputStream);
+			data.setByteDocument(baos.toByteArray());
 			
 			iwc.getSession().setAttribute(AscertiaConstants.PARAM_ASCERTIA_DATA, data);
 			
