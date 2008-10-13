@@ -601,6 +601,7 @@ public class AscertiaServlet extends HttpServlet {
 			+ (StringUtil.isEmpty(binaryVariable.getDescription()) ? binaryVariable.getFileName() : binaryVariable.getDescription());
 						
 			BinaryVariable signedBinaryVariable = taskInstance.addAttachment(variable, fileName, description, inputStream);
+			signedBinaryVariable.setHash(binaryVariable.getHash());
 			
 			signedBinaryVariable.setSigned(true);
 			signedBinaryVariable.store();
