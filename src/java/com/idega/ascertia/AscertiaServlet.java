@@ -604,10 +604,10 @@ public class AscertiaServlet extends HttpServlet {
 			signedBinaryVariable.setHash(binaryVariable.getHash());
 			
 			signedBinaryVariable.setSigned(true);
-			signedBinaryVariable.store();
+			signedBinaryVariable.update();
 			
 			binaryVariable.setHidden(true);
-			binaryVariable.store();
+			binaryVariable.update();
 			
 			VariablesHandler variablesHandler = getVariablesHandler(iwc.getServletContext());
 			
