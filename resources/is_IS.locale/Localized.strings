@@ -1,0 +1,5 @@
+iw.component.com.idega.ascertia.presentation.AscertiaSigner.name=Ascertia Signer
+sign_document=Skrifa rafrænt undir skjal
+signed_successfully=Rafræn undirskrift tókst
+signing=Skrifa undir skjalið...
+download=Hlaða niður undirskrifaða skjalinu
