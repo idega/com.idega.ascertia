@@ -87,7 +87,7 @@ public class AscertiaServlet extends HttpServlet {
 		
 		super.init(a_objServletConfig);
 
-		System.out.println("Asctertia servlet started");
+		//System.out.println("Asctertia servlet started");
 
 	}
 
@@ -98,8 +98,8 @@ public class AscertiaServlet extends HttpServlet {
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
 
-		System.out
-				.println("GoSign Request Has Been Recieved in the doGet Method...");
+		//System.out
+		//		.println("GoSign Request Has Been Recieved in the doGet Method...");
 
 		response.setContentType("text/html");
 
@@ -113,7 +113,7 @@ public class AscertiaServlet extends HttpServlet {
 	public void doPost(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
 
-		logger.log(Level.INFO,"GoSign Request Has Been Recieved in the doPost Method...");
+		//logger.log(Level.INFO,"GoSign Request Has Been Recieved in the doPost Method...");
 
 		/* Reading parameters' values from web.xml file */
 
@@ -238,7 +238,7 @@ public class AscertiaServlet extends HttpServlet {
 
 				certificate = certificate.replaceAll(" ", "+");
 
-				logger.log(Level.INFO,"str_certificate: " + certificate);
+				//logger.log(Level.INFO,"str_certificate: " + certificate);
 
 			}
 
@@ -263,7 +263,7 @@ public class AscertiaServlet extends HttpServlet {
 			/* Web application has been called first time, for Document Hash */
 
 			if (isFirstTime) {
-				logger.log(Level.INFO,"Server has been hit first time.");
+				//logger.log(Level.INFO,"Server has been hit first time.");
 				InputStream inputStream;
 				// getting pdf from url
 				String documentURL = request
@@ -343,8 +343,8 @@ public class AscertiaServlet extends HttpServlet {
 				EmptySignatureFieldResponse emptySigFieldResponse = (EmptySignatureFieldResponse) emptySigFieldRequest
 						.send(EMPTY_SIGNATURE_URL);
 
-				System.out.println("EMPTY_SIGNATURE_URI: "
-						+ EMPTY_SIGNATURE_URL);
+				//System.out.println("EMPTY_SIGNATURE_URI: "
+				//		+ EMPTY_SIGNATURE_URL);
 
 				if (emptySigFieldResponse.isResponseSuccessfull()) {
 					pdfFileWithEmptySignature = emptySigFieldResponse
@@ -353,7 +353,7 @@ public class AscertiaServlet extends HttpServlet {
 					logger.log(Level.INFO,"Empty signature request has been processed successfully.");
 				} else {
 					isResponseSuccessfull = false;
-					System.out.println(emptySigFieldResponse.getErrorMessage());
+					logger.log(Level.SEVERE, emptySigFieldResponse.getErrorMessage());
 				}
 
 				if (isResponseSuccessfull) {
@@ -408,7 +408,7 @@ public class AscertiaServlet extends HttpServlet {
 
 			else {
 				
-				logger.log(Level.INFO,"Reading signature bytes");
+				//logger.log(Level.INFO,"Reading signature bytes");
 
 				session = request.getSession(false);
 
@@ -593,16 +593,17 @@ public class AscertiaServlet extends HttpServlet {
 		
 		InputStream inputStream = new ByteArrayInputStream(signedPDF);
 	
-		Variable variable = new Variable("signed_pdf_document_task",VariableDataType.FILE);
+		//Variable variable = new Variable("signed_pdf_document_task",VariableDataType.FILE);
 		
 		try {
 			String description = iwc.getIWMainApplication().getBundle("com.idega.ascertia").
 			getResourceBundle(iwc).getLocalizedString("signed", "Signed")+ " " 
 			+ (StringUtil.isEmpty(binaryVariable.getDescription()) ? binaryVariable.getFileName() : binaryVariable.getDescription());
 						
-			BinaryVariable signedBinaryVariable = taskInstance.addAttachment(variable, fileName, description, inputStream);
-			signedBinaryVariable.setHash(binaryVariable.getHash());
+			BinaryVariable signedBinaryVariable = taskInstance.addAttachment(binaryVariable.getVariable(), fileName, description, inputStream);
+			//signedBinaryVariable.setHash(binaryVariable.getHash());
 			
+			//signedBinaryVariable.setDescription(description);
 			signedBinaryVariable.setSigned(true);
 			signedBinaryVariable.update();
 			
