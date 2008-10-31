@@ -9,10 +9,12 @@ package com.idega.ascertia;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -26,6 +28,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.apache.webdav.lib.WebdavResource;
 import org.bouncycastle.util.encoders.Base64;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -36,9 +39,11 @@ import com.ascertia.adss.client.api.EmptySignatureFieldResponse;
 import com.ascertia.adss.client.api.SignatureAssemblyRequest;
 import com.ascertia.adss.client.api.SignatureAssemblyResponse;
 import com.ascertia.adss.client.api.SigningRequest;
+import com.idega.block.pdf.util.PDFUtil;
 import com.idega.block.process.variables.Variable;
 import com.idega.block.process.variables.VariableDataType;
 import com.idega.business.IBOLookup;
+import com.idega.business.IBOLookupException;
 import com.idega.core.file.util.MimeTypeUtil;
 import com.idega.idegaweb.IWMainApplication;
 import com.idega.jbpm.exe.BPMFactory;
@@ -47,16 +52,13 @@ import com.idega.jbpm.variables.BinaryVariable;
 import com.idega.jbpm.variables.VariablesHandler;
 import com.idega.presentation.IWContext;
 import com.idega.slide.business.IWSlideService;
+import com.idega.slide.business.IWSlideServiceBean;
 import com.idega.util.CoreConstants;
 import com.idega.util.StringUtil;
 import com.idega.util.expression.ELUtil;
 import com.idega.webface.WFUtil;
 
 public class AscertiaServlet extends HttpServlet {
-	/**
-	 * 
-	 * Contents' type of http response
-	 */
 
 	private static final String CONTENT_TYPE = "text/xml";
 	
@@ -65,6 +67,7 @@ public class AscertiaServlet extends HttpServlet {
 	public static final String PROP_ADSS_SERVER_URL = "adss_server_url";
 	public static final String PROP_SIGNATURE_PROFILE="signature_profile";
 	public static final String PROP_EMPTY_SIGNATURE_PROFILE = "empty_signature_profile";
+	public static final String SIGNATURE_PAGE_URL = "signature_page_path";
 	
 	
 	@Autowired
@@ -84,10 +87,8 @@ public class AscertiaServlet extends HttpServlet {
 	public void init(ServletConfig a_objServletConfig) throws ServletException {
 		
 		ELUtil.getInstance().autowire(this);
-		
 		super.init(a_objServletConfig);
 
-		//System.out.println("Asctertia servlet started");
 
 	}
 
@@ -113,15 +114,11 @@ public class AscertiaServlet extends HttpServlet {
 	public void doPost(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
 
-		//logger.log(Level.INFO,"GoSign Request Has Been Recieved in the doPost Method...");
-
-		/* Reading parameters' values from web.xml file */
 
 		/**
 		 * 
 		 * URL of deployed PDF Signer Server
 		 */
-		// TODO: get dinamically
 		String ADSS_URL =IWMainApplication.getDefaultIWMainApplication().getSettings()
 			.getProperty(PROP_ADSS_SERVER_URL,"http://82.221.28.123/adss/signing/");
 		/**
@@ -129,7 +126,6 @@ public class AscertiaServlet extends HttpServlet {
 		 * URL of deployed PDF Signer Server, where Document Hashing's
 		 * request(s) will be sent
 		 */
-
 		String HASHING_URL = ADSS_URL + "dhi";
 
 		/**
@@ -137,14 +133,12 @@ public class AscertiaServlet extends HttpServlet {
 		 * URL of deployed PDF Signer Server, where Signature Assembly's
 		 * request(s) will be sent
 		 */
-
 		String ASSEMBLY_URL = ADSS_URL + "sai";
 
 		/**
 		 * 
 		 * User name, registered on PDF Signer Server
 		 */
-
 		String ORIGINATOR_ID = getServletContext().getInitParameter(
 				"ORIGINATOR_ID");
 
@@ -153,22 +147,9 @@ public class AscertiaServlet extends HttpServlet {
 		 * Signing profile id that will be used to sign the existing user's
 		 * blank signature field
 		 */
-
-		// TODO: get dinamically
 		String SIGNATURE_PROFILE =IWMainApplication.getDefaultIWMainApplication().getSettings()
 			.getProperty(PROP_SIGNATURE_PROFILE,"adss:signing:profile:007");
 
-		/* Printing the parameters' values on console */
-		
-		/*
-		System.out.println("HASHING_URL : " + HASHING_URL);
-
-		System.out.println("ASSEMBLY_URL : " + ASSEMBLY_URL);
-
-		System.out.println("ORIGINATOR_ID : " + ORIGINATOR_ID);
-
-		System.out.println("USER_PROFILE_ID : " + USER_PROFILE_ID);
-		*/
 		/**
 		 * 
 		 * variable that is used to detect, the server has been hit first or
@@ -198,8 +179,6 @@ public class AscertiaServlet extends HttpServlet {
 		 */
 
 		HttpSession session =  request.getSession(true);
-
-		// String adss_signing_profile = null;
 
 		/**
 		 * 
@@ -324,8 +303,34 @@ public class AscertiaServlet extends HttpServlet {
 					inputStream.read(rawPdfFile);
 				}
 				
+				//Adding empty page at the end of document to be signed
+				WebdavResource signingPage =  getIWSlideService(iwc).getWebdavResourceAuthenticatedAsRoot(CoreConstants.PATH_FILES_ROOT + IWMainApplication.getDefaultIWMainApplication().getSettings()
+					.getProperty(SIGNATURE_PAGE_URL));
+				InputStream is = signingPage.getMethodData();
 				
+				ByteArrayOutputStream baos = new ByteArrayOutputStream();
+				byte buffer[] = new byte[1024];
+				int noRead = 0;
+				noRead = is.read(buffer, 0, 1024);
 
+				//Write out the stream to the file
+				while (noRead != -1) {
+					baos.write(buffer, 0, noRead);
+					noRead = is.read(buffer, 0, 1024);
+				}
+				byte[] signatresDoc = new byte[is.available()];
+				signatresDoc = baos.toByteArray();				
+				
+				List<byte[]> pdfsToMerge = new ArrayList<byte[]>(2);
+				
+				pdfsToMerge.add(rawPdfFile);
+				pdfsToMerge.add(signatresDoc);
+				
+				ByteArrayOutputStream mergedPDFoutput = new ByteArrayOutputStream();
+				PDFUtil.concatPDFs(pdfsToMerge, mergedPDFoutput, true);
+				rawPdfFile = mergedPDFoutput.toByteArray();
+				
+				
 				// Getting empty signature field
 				byte[] pdfFileWithEmptySignature = null;
 
@@ -343,10 +348,9 @@ public class AscertiaServlet extends HttpServlet {
 				EmptySignatureFieldResponse emptySigFieldResponse = (EmptySignatureFieldResponse) emptySigFieldRequest
 						.send(EMPTY_SIGNATURE_URL);
 
-				//System.out.println("EMPTY_SIGNATURE_URI: "
-				//		+ EMPTY_SIGNATURE_URL);
-
+				
 				if (emptySigFieldResponse.isResponseSuccessfull()) {
+					
 					pdfFileWithEmptySignature = emptySigFieldResponse
 							.getSignedDocument();
 					isResponseSuccessfull = true;
@@ -407,9 +411,6 @@ public class AscertiaServlet extends HttpServlet {
 			 */
 
 			else {
-				
-				//logger.log(Level.INFO,"Reading signature bytes");
-
 				session = request.getSession(false);
 
 				/*
@@ -451,15 +452,12 @@ public class AscertiaServlet extends HttpServlet {
 
 				if (signatureAssemblyResponse.isResponseSuccessfull()) {
 					
-					
 					//writing to disk
 					signatureAssemblyResponse
 							.writeSignedPDFTo(str_signedDocPath);
 					isResponseSuccessfull = true;
 					signedDocument = signatureAssemblyResponse
 							.getSignedDocument();
-					
-					//writeToSlide(signedDocument, str_signedDocPath);
 					
 					FacesContext fctx = WFUtil.createFacesContext(request.getSession().getServletContext(), request, response);
 					IWContext iwc = IWContext.getIWContext(fctx);
@@ -581,19 +579,14 @@ public class AscertiaServlet extends HttpServlet {
 
 	}
 	
-	private void saveSignedPDFAttachment(IWContext iwc, BinaryVariable binaryVariable,long taskInstanceId, 
+	protected void saveSignedPDFAttachment(IWContext iwc, BinaryVariable binaryVariable,long taskInstanceId, 
 			Integer binaryVariableHash,byte[] signedPDF) throws Exception{
-		
 		
 		TaskInstanceW taskInstance = getBpmFactory().getProcessManagerByTaskInstanceId(taskInstanceId)
 				.getTaskInstance(taskInstanceId);
 		
-
 		String fileName = binaryVariable.getFileName().replace(".pdf", "_signed.pdf");
-		
 		InputStream inputStream = new ByteArrayInputStream(signedPDF);
-	
-		//Variable variable = new Variable("signed_pdf_document_task",VariableDataType.FILE);
 		
 		try {
 			String description = iwc.getIWMainApplication().getBundle("com.idega.ascertia").
@@ -601,9 +594,7 @@ public class AscertiaServlet extends HttpServlet {
 			+ (StringUtil.isEmpty(binaryVariable.getDescription()) ? binaryVariable.getFileName() : binaryVariable.getDescription());
 						
 			BinaryVariable signedBinaryVariable = taskInstance.addAttachment(binaryVariable.getVariable(), fileName, description, inputStream);
-			//signedBinaryVariable.setHash(binaryVariable.getHash());
-			
-			//signedBinaryVariable.setDescription(description);
+
 			signedBinaryVariable.setSigned(true);
 			signedBinaryVariable.update();
 			
@@ -665,6 +656,10 @@ public class AscertiaServlet extends HttpServlet {
 	private VariablesHandler getVariablesHandler(ServletContext ctx) {
 
 		return ELUtil.getInstance().getBean("bpmVariablesHandler");
+	}
+	
+	private IWSlideService getIWSlideService(IWContext iwac) throws IBOLookupException{
+		return (IWSlideService)IBOLookup.getServiceInstance(iwac, IWSlideService.class);
 	}
 
 }
