@@ -9,7 +9,6 @@ package com.idega.ascertia;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -52,7 +51,6 @@ import com.idega.jbpm.variables.BinaryVariable;
 import com.idega.jbpm.variables.VariablesHandler;
 import com.idega.presentation.IWContext;
 import com.idega.slide.business.IWSlideService;
-import com.idega.slide.business.IWSlideServiceBean;
 import com.idega.util.CoreConstants;
 import com.idega.util.StringUtil;
 import com.idega.util.expression.ELUtil;
@@ -246,7 +244,7 @@ public class AscertiaServlet extends HttpServlet {
 				InputStream inputStream;
 				// getting pdf from url
 				String documentURL = request
-						.getParameter(AscertiaConstants.DOCUMENT_URL_ID);
+						.getParameter(AscertiaConstants.UNSIGNED_DOCUMENT_URL);
 
 				FacesContext fctx = WFUtil.createFacesContext(request.getSession().getServletContext(), request, response);
 				IWContext iwc = IWContext.getIWContext(fctx);
@@ -301,35 +299,43 @@ public class AscertiaServlet extends HttpServlet {
 					}
 					rawPdfFile = new byte[inputStream.available()];
 					inputStream.read(rawPdfFile);
+					
+					
+					Long taskInstanceId = Long.valueOf(request.getParameter(AscertiaConstants.PARAM_TASK_ID));
+					session.setAttribute(AscertiaConstants.PARAM_TASK_ID, taskInstanceId);
+					
 				}
 				
-				//Adding empty page at the end of document to be signed
-				WebdavResource signingPage =  getIWSlideService(iwc).getWebdavResourceAuthenticatedAsRoot(CoreConstants.PATH_FILES_ROOT + IWMainApplication.getDefaultIWMainApplication().getSettings()
-					.getProperty(SIGNATURE_PAGE_URL));
-				InputStream is = signingPage.getMethodData();
-				
-				ByteArrayOutputStream baos = new ByteArrayOutputStream();
-				byte buffer[] = new byte[1024];
-				int noRead = 0;
-				noRead = is.read(buffer, 0, 1024);
-
-				//Write out the stream to the file
-				while (noRead != -1) {
-					baos.write(buffer, 0, noRead);
+				try{
+					//Adding empty page at the end of document to be signed
+					WebdavResource signingPage =  getIWSlideService(iwc).getWebdavResourceAuthenticatedAsRoot(CoreConstants.PATH_FILES_ROOT + IWMainApplication.getDefaultIWMainApplication().getSettings()
+						.getProperty(SIGNATURE_PAGE_URL));
+					InputStream is = signingPage.getMethodData();
+					
+					ByteArrayOutputStream baos = new ByteArrayOutputStream();
+					byte buffer[] = new byte[1024];
+					int noRead = 0;
 					noRead = is.read(buffer, 0, 1024);
+	
+					//Write out the stream to the file
+					while (noRead != -1) {
+						baos.write(buffer, 0, noRead);
+						noRead = is.read(buffer, 0, 1024);
+					}
+					byte[] signatresDoc = new byte[is.available()];
+					signatresDoc = baos.toByteArray();				
+					
+					List<byte[]> pdfsToMerge = new ArrayList<byte[]>(2);
+					
+					pdfsToMerge.add(rawPdfFile);
+					pdfsToMerge.add(signatresDoc);
+					
+					ByteArrayOutputStream mergedPDFoutput = new ByteArrayOutputStream();
+					PDFUtil.concatPDFs(pdfsToMerge, mergedPDFoutput, true);
+					rawPdfFile = mergedPDFoutput.toByteArray();
+				}catch (Exception e) {
+					// TODO: handle exception
 				}
-				byte[] signatresDoc = new byte[is.available()];
-				signatresDoc = baos.toByteArray();				
-				
-				List<byte[]> pdfsToMerge = new ArrayList<byte[]>(2);
-				
-				pdfsToMerge.add(rawPdfFile);
-				pdfsToMerge.add(signatresDoc);
-				
-				ByteArrayOutputStream mergedPDFoutput = new ByteArrayOutputStream();
-				PDFUtil.concatPDFs(pdfsToMerge, mergedPDFoutput, true);
-				rawPdfFile = mergedPDFoutput.toByteArray();
-				
 				
 				// Getting empty signature field
 				byte[] pdfFileWithEmptySignature = null;
@@ -453,8 +459,6 @@ public class AscertiaServlet extends HttpServlet {
 				if (signatureAssemblyResponse.isResponseSuccessfull()) {
 					
 					//writing to disk
-					signatureAssemblyResponse
-							.writeSignedPDFTo(str_signedDocPath);
 					isResponseSuccessfull = true;
 					signedDocument = signatureAssemblyResponse
 							.getSignedDocument();
@@ -464,18 +468,22 @@ public class AscertiaServlet extends HttpServlet {
 					
 					Integer variableHash = (Integer)session.getAttribute(AscertiaConstants.PARAM_VARIABLE_HASH);
 					Long taskInstanceId = (Long)session.getAttribute(AscertiaConstants.PARAM_TASK_ID);
-
-					VariablesHandler variablesHandler = getVariablesHandler(iwc
-						.getServletContext());
-
-					BinaryVariable binaryVariable = getBinVar(variablesHandler,
-						taskInstanceId, variableHash);
+					String fileName = (String) session.getAttribute("FileName");
+					if(variableHash != null && taskInstanceId != null){
 					
-					saveSignedPDFAttachment(iwc, binaryVariable, taskInstanceId, variableHash, signedDocument);
+						VariablesHandler variablesHandler = getVariablesHandler(iwc
+							.getServletContext());
+	
+						BinaryVariable binaryVariable = getBinVar(variablesHandler,
+							taskInstanceId, variableHash);
+						
+						saveSignedPDFAttachment(iwc, binaryVariable, taskInstanceId, variableHash, signedDocument);
+						
 					
+					}else if (taskInstanceId != null && fileName != null){
+						saveSignedPDFAsNewVariable(iwc, taskInstanceId, signedDocument, fileName);
+					}
 					logger.log(Level.INFO,"Documend successfully signed");
-					
-					
 				} else {
 
 					errorMessage = signatureAssemblyResponse.getErrorMessage();
@@ -626,7 +634,7 @@ public class AscertiaServlet extends HttpServlet {
 			
 			iwc.getSession().setAttribute(AscertiaConstants.PARAM_ASCERTIA_DATA, data);
 			
-			//getAscertiaDataPull().put(conversationId, data);
+			
 			
 		} catch(Exception e) {
 			logger.log(Level.SEVERE, "Unable to set binary variable with signed document for task instance: " + taskInstanceId, e);
@@ -636,6 +644,60 @@ public class AscertiaServlet extends HttpServlet {
 		
 	}
 
+	protected void saveSignedPDFAsNewVariable(IWContext iwc,long taskInstanceId,byte[] signedPDF, String fileName) throws Exception{
+		
+		TaskInstanceW taskInstance = getBpmFactory().getProcessManagerByTaskInstanceId(taskInstanceId)
+				.getTaskInstance(taskInstanceId);
+		
+		InputStream inputStream = new ByteArrayInputStream(signedPDF);
+		
+		
+		
+		try {
+			
+			Variable variable = new Variable(AscertiaConstants.SIGNED_VARIABLE_NAME, VariableDataType.FILE);
+			BinaryVariable signedBinaryVariable = taskInstance.addAttachment(variable, fileName, fileName, inputStream);
+			
+			signedBinaryVariable.setSigned(true);
+			signedBinaryVariable.update();
+			
+			VariablesHandler variablesHandler = getVariablesHandler(iwc.getServletContext());
+			
+			inputStream = variablesHandler.getBinaryVariablesHandler().getBinaryVariableContent(signedBinaryVariable);
+			
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			byte buffer[] = new byte[1024];
+			int noRead = 0;
+			try {
+				noRead = inputStream.read(buffer, 0, 1024);
+				while (noRead != -1) {
+					baos.write(buffer, 0, noRead);
+					noRead = inputStream.read(buffer, 0, 1024);
+				}
+			} catch (IOException e) {
+				logger.log(Level.SEVERE, "Unable to read from input stream",e);
+				inputStream = null;
+				return;
+			}
+			
+			taskInstance.submit(getBpmFactory().getSubmitionView(taskInstanceId));
+			
+			AscertiaData data = new AscertiaData();
+			data.setDocumentName(fileName);
+			data.setByteDocument(baos.toByteArray());
+			
+			iwc.getSession().setAttribute(AscertiaConstants.PARAM_ASCERTIA_DATA, data);
+			
+		} catch(Exception e) {
+			logger.log(Level.SEVERE, "Unable to set binary variable with signed document for task instance: " + taskInstanceId, e);
+			throw new Exception(e);
+			
+		} 
+		
+	}
+
+	
+	
 	private BinaryVariable getBinVar(VariablesHandler variablesHandler,
 			long taskInstanceId, Integer binaryVariableHash) {
 
