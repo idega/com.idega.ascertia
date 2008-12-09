@@ -49,6 +49,7 @@ import com.idega.jbpm.exe.BPMFactory;
 import com.idega.jbpm.exe.TaskInstanceW;
 import com.idega.jbpm.variables.BinaryVariable;
 import com.idega.jbpm.variables.VariablesHandler;
+import com.idega.jbpm.view.ViewSubmission;
 import com.idega.presentation.IWContext;
 import com.idega.slide.business.IWSlideService;
 import com.idega.util.CoreConstants;
@@ -680,7 +681,9 @@ public class AscertiaServlet extends HttpServlet {
 				return;
 			}
 			
-			taskInstance.submit(getBpmFactory().getSubmitionView(taskInstanceId));
+			ViewSubmission viewSubmission = getBpmFactory().getViewSubmission();
+			
+			taskInstance.submit(viewSubmission);
 			
 			AscertiaData data = new AscertiaData();
 			data.setDocumentName(fileName);
