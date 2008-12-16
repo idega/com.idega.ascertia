@@ -1,12 +1,20 @@
 package com.idega.ascertia.presentation;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Locale;
-import java.util.Map;
+import java.util.logging.Level;
 
 import javax.faces.context.FacesContext;
 
+import org.springframework.beans.factory.annotation.Autowired;
+
 import com.idega.ascertia.AscertiaConstants;
+import com.idega.ascertia.AscertiaData;
+import com.idega.ascertia.AscertiaPDFPrinter;
 import com.idega.bpm.jsfcomponentview.BPMCapableJSFComponent;
 import com.idega.bpm.jsfcomponentview.JSFComponentView;
 import com.idega.builder.bean.AdvancedProperty;
@@ -14,19 +22,30 @@ import com.idega.core.builder.business.BuilderService;
 import com.idega.core.builder.business.BuilderServiceFactory;
 import com.idega.idegaweb.IWApplicationContext;
 import com.idega.idegaweb.IWMainApplication;
+import com.idega.io.MediaWritable;
+import com.idega.jbpm.exe.BPMFactory;
+import com.idega.jbpm.exe.TaskInstanceW;
 import com.idega.jbpm.variables.BinaryVariable;
+import com.idega.jbpm.variables.VariablesHandler;
 import com.idega.presentation.IWBaseComponent;
 import com.idega.presentation.IWContext;
 import com.idega.presentation.Layer;
 import com.idega.presentation.text.Text;
 import com.idega.presentation.ui.IFrame;
 import com.idega.util.CoreConstants;
+import com.idega.util.expression.ELUtil;
 
 public class AscertiaBMPCapableSigningForm extends IWBaseComponent implements BPMCapableJSFComponent {
 
 	private static final String SINGNING_FRAME = "signing_frame";
 	
 	private JSFComponentView view;
+	
+	@Autowired
+	private VariablesHandler variablesHandler;
+	
+	@Autowired
+	private BPMFactory bpmFactory;
 	
 	public AscertiaBMPCapableSigningForm() {
 		super();
@@ -59,9 +78,10 @@ public class AscertiaBMPCapableSigningForm extends IWBaseComponent implements BP
 		}
 		
 		String pathToSigner = null;
-		if(view.isSubmitable()){
-		
-		String serverURL = IWContext.getIWContext(context).getServerURL();
+		IWContext iwc = IWContext.getIWContext(context);
+		if(view.isSubmitable()){	
+			
+		String serverURL = iwc.getServerURL();
 		serverURL = (serverURL.endsWith("/")) ? serverURL.substring(0, serverURL.length() - 1) : serverURL;
 		
 		String pathToDocument = serverURL +  CoreConstants.WEBDAV_SERVLET_URI + CoreConstants.SLASH + IWMainApplication.getDefaultIWMainApplication().getSettings()
@@ -89,9 +109,42 @@ public class AscertiaBMPCapableSigningForm extends IWBaseComponent implements BP
 		div.add(frame);
 		
 		}else{
-			div.add(new Text(iwac.getIWMainApplication().getLocalisedStringMessage(
+			TaskInstanceW taskInstanceW = getBpmFactory().getProcessManagerByTaskInstanceId(view.getTaskInstanceId()).getTaskInstance(view.getTaskInstanceId());
+			BinaryVariable signedDocument = taskInstanceW.getAttachement(AscertiaConstants.SIGNED_VARIABLE_NAME);
+			
+			VariablesHandler variablesHandler = getVariablesHandler();
+			
+			InputStream inputStream = variablesHandler.getBinaryVariablesHandler().getBinaryVariableContent(signedDocument);
+			
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			byte buffer[] = new byte[1024];
+			int noRead = 0;
+			try {
+				noRead = inputStream.read(buffer, 0, 1024);
+				while (noRead != -1) {
+					baos.write(buffer, 0, noRead);
+					noRead = inputStream.read(buffer, 0, 1024);
+				}
+			} catch (IOException e) {
+				inputStream = null;
+				return;
+			}
+			AscertiaData data = new AscertiaData();
+			data.setDocumentName(signedDocument.getFileName());
+			data.setByteDocument(baos.toByteArray());
+			
+			
+			
+			iwc.getSession().setAttribute(AscertiaConstants.PARAM_ASCERTIA_DATA, data);
+			IFrame frame = new IFrame("signedDocument", iwc.getIWMainApplication().getMediaServletURI() + "?" + MediaWritable.PRM_WRITABLE_CLASS + "="+ IWMainApplication.getEncryptedClassName(AscertiaPDFPrinter.class));
+			frame.setWidth("100%");
+			frame.setHeight("100%");
+			div.add(frame);
+			//getVariablesHandler().getBinaryVariablesHandler().r
+			//getVariablesHandler().getBinaryVariablesHandler().getBinaryVariableContent(view.resolveParameters().get(AscertiaConstants.SIGNED_VARIABLE_NAME));
+			/*div.add(new Text(iwac.getIWMainApplication().getLocalisedStringMessage(
 				"see_attachement", "See attachment for signed document", "com.idega.ascertia", 
-				IWContext.getIWContext(context).getCurrentLocale())));
+				IWContext.getIWContext(context).getCurrentLocale())));*/
 		}
 		add(div);
 	}
@@ -125,6 +178,28 @@ public class AscertiaBMPCapableSigningForm extends IWBaseComponent implements BP
 		Object values[] = (Object[]) state;
 		super.restoreState(ctx, values[0]);
 		this.view = (JSFComponentView)values[1];
+	}
+
+	public VariablesHandler getVariablesHandler() {
+		if(variablesHandler == null){
+			ELUtil.getInstance().autowire(this);
+		}
+		return variablesHandler;
+	}
+
+	public void setVariablesHandler(VariablesHandler variablesHandler) {
+		this.variablesHandler = variablesHandler;
+	}
+
+	public BPMFactory getBpmFactory() {
+		if(bpmFactory == null){
+			ELUtil.getInstance().autowire(this);
+		}
+		return bpmFactory;
+	}
+
+	public void setBpmFactory(BPMFactory bpmFactory) {
+		this.bpmFactory = bpmFactory;
 	}
 
 }
