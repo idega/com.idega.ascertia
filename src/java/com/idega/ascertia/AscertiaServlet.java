@@ -110,7 +110,7 @@ public class AscertiaServlet extends HttpServlet {
 
 	}
 
-	// Process the HTTP Post request
+	// Process the HTTP Post request	
 
 	public void doPost(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
@@ -471,7 +471,8 @@ public class AscertiaServlet extends HttpServlet {
 					Long taskInstanceId = (Long)session.getAttribute(AscertiaConstants.PARAM_TASK_ID);
 					String fileName = (String) session.getAttribute("FileName");
 					if(variableHash != null && taskInstanceId != null){
-					
+						session.removeAttribute(AscertiaConstants.PARAM_TASK_ID);
+						session.removeAttribute(AscertiaConstants.PARAM_VARIABLE_HASH);
 						VariablesHandler variablesHandler = getVariablesHandler();
 	
 						BinaryVariable binaryVariable = getBinVar(variablesHandler,
@@ -481,6 +482,10 @@ public class AscertiaServlet extends HttpServlet {
 						
 					
 					}else if (taskInstanceId != null && fileName != null){
+						
+						session.removeAttribute(AscertiaConstants.PARAM_TASK_ID);
+						session.removeAttribute("FileName");
+						
 						saveSignedPDFAsNewVariable(session, taskInstanceId, signedDocument, fileName);
 					}
 					logger.log(Level.INFO,"Documend successfully signed");
@@ -599,8 +604,7 @@ public class AscertiaServlet extends HttpServlet {
 		try {
 			/*iwc.getIWMainApplication().getBundle("com.idega.ascertia").
 			getResourceBundle(iwc).getLocalizedString("signed", "Signed")*/
-			String description = IWMainApplication.getDefaultIWMainApplication()
-				.getLocalisedStringMessage("signed", "Signed", "com.idega.ascertia" , IWContext.getCurrentInstance().getCurrentLocale()) + " " 
+			String description = "Signed" + " " 
 				+ (StringUtil.isEmpty(binaryVariable.getDescription()) ? 
 						binaryVariable.getFileName() : binaryVariable.getDescription());
 						
@@ -693,7 +697,7 @@ public class AscertiaServlet extends HttpServlet {
 			data.setDocumentName(fileName);
 			data.setByteDocument(baos.toByteArray());
 			
-			/*iwc.getSession()*/session.setAttribute(AscertiaConstants.PARAM_ASCERTIA_DATA, data);
+			session.setAttribute(AscertiaConstants.PARAM_ASCERTIA_DATA, data);
 			
 		} catch(Exception e) {
 			logger.log(Level.SEVERE, "Unable to set binary variable with signed document for task instance: " + taskInstanceId, e);
@@ -734,6 +738,3 @@ public class AscertiaServlet extends HttpServlet {
 	}
 
 }
-
-
-//com.idega.slide.authentication.IWSlideAuthenticatedRequest@12258d9
