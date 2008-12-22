@@ -1,12 +1,10 @@
 package com.idega.ascertia.presentation;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Locale;
-import java.util.logging.Level;
 
 import javax.faces.context.FacesContext;
 
@@ -30,7 +28,6 @@ import com.idega.jbpm.variables.VariablesHandler;
 import com.idega.presentation.IWBaseComponent;
 import com.idega.presentation.IWContext;
 import com.idega.presentation.Layer;
-import com.idega.presentation.text.Text;
 import com.idega.presentation.ui.IFrame;
 import com.idega.util.CoreConstants;
 import com.idega.util.expression.ELUtil;
@@ -140,23 +137,18 @@ public class AscertiaBMPCapableSigningForm extends IWBaseComponent implements BP
 			frame.setWidth("100%");
 			frame.setHeight("100%");
 			div.add(frame);
-			//getVariablesHandler().getBinaryVariablesHandler().r
-			//getVariablesHandler().getBinaryVariablesHandler().getBinaryVariableContent(view.resolveParameters().get(AscertiaConstants.SIGNED_VARIABLE_NAME));
-			/*div.add(new Text(iwac.getIWMainApplication().getLocalisedStringMessage(
-				"see_attachement", "See attachment for signed document", "com.idega.ascertia", 
-				IWContext.getIWContext(context).getCurrentLocale())));*/
 		}
 		add(div);
 	}
 	
 	public String getDefaultDisplayName() {
-		// TODO Auto-generated method stub
-		return null;
+		
+		return IWMainApplication.getDefaultIWMainApplication().getLocalisedStringMessage("sign_document", "Sign document", "com.idega.ascertia");
+		
 	}
 
 	public String getDisplayName(Locale locale) {
-		// TODO Auto-generated method stub
-		return null;
+		return IWMainApplication.getDefaultIWMainApplication().getLocalisedStringMessage("sign_document", "Sign document", "com.idega.ascertia",locale);
 	}
 
 	public void setView(JSFComponentView view) {
