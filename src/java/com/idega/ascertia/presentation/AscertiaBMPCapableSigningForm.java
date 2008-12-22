@@ -107,7 +107,7 @@ public class AscertiaBMPCapableSigningForm extends IWBaseComponent implements BP
 		
 		}else{
 			TaskInstanceW taskInstanceW = getBpmFactory().getProcessManagerByTaskInstanceId(view.getTaskInstanceId()).getTaskInstance(view.getTaskInstanceId());
-			BinaryVariable signedDocument = taskInstanceW.getAttachement(AscertiaConstants.SIGNED_VARIABLE_NAME);
+			BinaryVariable signedDocument = taskInstanceW.getAttachment(AscertiaConstants.SIGNED_VARIABLE_NAME);
 			
 			VariablesHandler variablesHandler = getVariablesHandler();
 			
