@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import com.idega.ascertia.AscertiaConstants;
 import com.idega.ascertia.AscertiaData;
 import com.idega.ascertia.AscertiaPDFPrinter;
+import com.idega.block.process.variables.Variable;
 import com.idega.bpm.jsfcomponentview.BPMCapableJSFComponent;
 import com.idega.bpm.jsfcomponentview.JSFComponentView;
 import com.idega.builder.bean.AdvancedProperty;
@@ -107,7 +108,10 @@ public class AscertiaBMPCapableSigningForm extends IWBaseComponent implements BP
 		
 		}else{
 			TaskInstanceW taskInstanceW = getBpmFactory().getProcessManagerByTaskInstanceId(view.getTaskInstanceId()).getTaskInstance(view.getTaskInstanceId());
-			BinaryVariable signedDocument = taskInstanceW.getAttachment(AscertiaConstants.SIGNED_VARIABLE_NAME);
+			
+			Variable signedVar = Variable.parseDefaultStringRepresentation(AscertiaConstants.SIGNED_VARIABLE_NAME);
+			
+			BinaryVariable signedDocument = taskInstanceW.getAttachment(signedVar);
 			
 			VariablesHandler variablesHandler = getVariablesHandler();
 			
