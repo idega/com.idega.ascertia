@@ -107,12 +107,12 @@ public class AscertiaBPMSigner extends Block {
 		return PARAMETER_SHOW_UNSIGNED_PDF;
 	}
 
-	public void showSigningForm(IWContext iwc) throws RemoteException {
+	
+    public void showSigningForm(IWContext iwc) throws RemoteException {
 
 		String serverURL = iwc.getServerURL();
 		serverURL = (serverURL.endsWith("/")) ? serverURL.substring(0, serverURL.length() - 1) : serverURL;
-		String documentURL =/* serverURL + CoreConstants.WEBDAV_SERVLET_URI + CoreConstants.SLASH
-				+*/ iwc.getParameter(AscertiaConstants.UNSIGNED_DOCUMENT_URL);
+		String documentURL = iwc.getParameter(AscertiaConstants.UNSIGNED_DOCUMENT_URL);
 
 		targetURL = serverURL + "/sign/signer";
 
@@ -143,12 +143,13 @@ public class AscertiaBPMSigner extends Block {
 		
 		
 		Map<String, String> formParams = new HashMap<String, String>();
+		@SuppressWarnings("unchecked")
 		Enumeration<String> paramNames = iwc.getParameterNames();
 		while(paramNames.hasMoreElements()){
 			String paramName = paramNames.nextElement();
 			formParams.put(paramName,iwc.getParameter(paramName));
 		}
-		
+		formParams.put(AscertiaConstants.PARAM_LOCALE, iwc.getLocale().toString());
 		
 		Layer signingLayer = new Layer();
 		signingLayer.add(addForm(iwc, formParams));
@@ -248,6 +249,7 @@ public class AscertiaBPMSigner extends Block {
 			paramList.add(new AdvancedProperty(key, paramsMap.get(key)));
 			
 		}
+		
 		
 		paramList.add(new AdvancedProperty(PARAMETER_ACTION,String.valueOf(PARAMETER_SHOW_UNSIGNED_PDF)));
 		BuilderService builderService = BuilderServiceFactory.getBuilderService(iwc);
