@@ -127,7 +127,7 @@ function GoSign_SetAliasDisplayValueMissing(aliasDisplayMissingValue){
 	gosign.setAliasDisplayValueMissing(aliasDisplayMissingValue);
 }
 
-function GoSign_EmbedApplet(GoSignRootFolderURL, SignatureType, SignatureMechanism, ContentSource) {
+function GoSign_EmbedApplet(GoSignRootFolderURL, SignatureType, SignatureMechanism, ContentSource, note) {
 	document.write(
         '<p>' +
 	'<!--[if !IE]> Firefox and others will use outer object -->' +
@@ -177,11 +177,7 @@ function GoSign_EmbedApplet(GoSignRootFolderURL, SignatureType, SignatureMechani
 	'      </object>' +
 	'<!--<![endif]-->  ' +
 	'</p>' +
-	'<p>' +
-	'     <strong>NOTE:</strong> Java Runtime Environment (JRE) version 6.0 (or latest) is needed to run the Ascertia GoSign applet. If the applet does not load properly please get the correct Java plug-in from' +
-	'      <a href=\"http://www.java.com/en/download/\">' +
-	'        <font color=\"#0000FF\">here.</font>' +
-	'      </a>' +
+	'<p>' + note +
 	'</p>');
 }
 

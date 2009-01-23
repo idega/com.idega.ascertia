@@ -1,7 +1,7 @@
 //depends on mootools
 
-function embedAscertiaApplet(URLToParentJSFolder,formName){
-	GoSign_EmbedApplet(URLToParentJSFolder,'PDF', 'ZERO_FOOTPRINT', 'REMOTE'); 
+function embedAscertiaApplet(URLToParentJSFolder,formName, note){
+	GoSign_EmbedApplet(URLToParentJSFolder,'PDF', 'ZERO_FOOTPRINT', 'REMOTE',note); 
 		if( !GoSign_IsAvailable() ){
 		     alert(GoSign_GetErrorReason());
 		}

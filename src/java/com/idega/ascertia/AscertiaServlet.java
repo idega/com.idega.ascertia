@@ -591,9 +591,7 @@ public class AscertiaServlet extends HttpServlet {
 		try {
 			String description;
 			if (localizedPrefix != null) {
-				description = localizedPrefix;/* iwc.getIWMainApplication().getBundle(
-				    "com.idega.ascertia").getResourceBundle(iwc)
-				        .getLocalizedString("signed", "Signed");*/
+				description = localizedPrefix;
 			} else {
 				description = "Signed";
 			}
