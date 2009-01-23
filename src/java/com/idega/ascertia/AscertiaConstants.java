@@ -9,7 +9,7 @@ public class AscertiaConstants {
 	public static final String PARAM_VARIABLE_HASH = "variable_hash";
 	public static final String PARAM_LANGUAGE_KEY = "language";
 	public static final String PARAM_ASCERTIA_DATA = "ascertia_data";
-	public static final String PARAM_LOCALE = "locale";
+	public static final String PARAM_LOCALIZED_FILE_PREFIX = "localized_file_prefix";
 	public static final String APP_PROP_PATH_TO_DOCUMENT_TO_SIGN = "path_to_document_for_signing";
 	public static final String APP_PROP_DOCUMENT_NAME = "document_name_for_signing";
 	

@@ -19,7 +19,6 @@ import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.faces.context.FacesContext;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -53,7 +52,6 @@ import com.idega.slide.business.IWSlideService;
 import com.idega.util.CoreConstants;
 import com.idega.util.StringUtil;
 import com.idega.util.expression.ELUtil;
-import com.idega.webface.WFUtil;
 
 public class AscertiaServlet extends HttpServlet {
 	
@@ -69,6 +67,11 @@ public class AscertiaServlet extends HttpServlet {
 	public static final String PROP_ADSS_SERVER_URL = "adss_server_url";
 	public static final String PROP_SIGNATURE_PROFILE = "signature_profile";
 	public static final String PROP_EMPTY_SIGNATURE_PROFILE = "empty_signature_profile";
+	public static final String PROP_HASHING_URI_END = "adss_server_hashing_uri_end";
+	public static final String PROP_ASSEMBLY_URL_END = "adss_server_asembly_uri_end";
+	public static final String PROP_ADSS_SERVER_ORIGINATOR_ID = "adss_server_originator_id";
+	public static final String PROP_ADDS_EMPTY_SIGNATURE_URI_END = "adss_empty_signature_uri_end";
+	
 	public static final String SIGNATURE_PAGE_URL = "signature_page_path";
 	
 	// private String errorMessage = "Error message hasn't been set properly.";
@@ -104,9 +107,6 @@ public class AscertiaServlet extends HttpServlet {
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
 	        throws ServletException, IOException {
 		
-		// System.out
-		// .println("GoSign Request Has Been Recieved in the doGet Method...");
-		
 		response.setContentType("text/html");
 		
 		getServletContext().getRequestDispatcher("/gosign.html").include(
@@ -118,65 +118,14 @@ public class AscertiaServlet extends HttpServlet {
 	
 	public void doPost(HttpServletRequest request, HttpServletResponse response)
 	        throws ServletException, IOException {
+		IWContext iwc = null;
 		
-		/**
-		 * URL of deployed PDF Signer Server
-		 */
-		String ADSS_URL = IWMainApplication.getDefaultIWMainApplication()
-		        .getSettings().getProperty(PROP_ADSS_SERVER_URL,
-		            "http://82.221.28.123/adss/signing/");
-		/**
-		 * URL of deployed PDF Signer Server, where Document Hashing's request(s) will be sent
-		 */
-		String HASHING_URL = ADSS_URL + "dhi";
-		
-		/**
-		 * URL of deployed PDF Signer Server, where Signature Assembly's request(s) will be sent
-		 */
-		String ASSEMBLY_URL = ADSS_URL + "sai";
-		
-		/**
-		 * User name, registered on PDF Signer Server
-		 */
-		String ORIGINATOR_ID = getServletContext().getInitParameter(
-		    "ORIGINATOR_ID");
-		
-		/**
-		 * Signing profile id that will be used to sign the existing user's blank signature field
-		 */
-		String SIGNATURE_PROFILE = IWMainApplication
-		        .getDefaultIWMainApplication().getSettings().getProperty(
-		            PROP_SIGNATURE_PROFILE, "adss:signing:profile:007");
-		
-		/**
-		 * variable that is used to detect, the server has been hit first or second time
-		 */
+		iwc = new IWContext(request, response, request.getSession()
+		        .getServletContext());
 		
 		boolean isFirstTime = false;
-		
-		/**
-		 * Certificate that will be used for producing user's signature
-		 */
-		
 		String certificate = null;
-		
-		/**
-		 * PKCS#7 bytes
-		 */
-		
-		byte[] b_pkcs7 = null;
-		
-		/**
-		 * Http session, used to keep the pdf document's id in record during the complete signing
-		 * request
-		 */
-		
 		HttpSession session = request.getSession(true);
-		
-		/**
-		 * Variable that is used to detect, the response from the PDF Signer Server is successfull
-		 * or not
-		 */
 		
 		boolean isResponseSuccessfull = false;
 		
@@ -240,10 +189,6 @@ public class AscertiaServlet extends HttpServlet {
 				String documentURL = request
 				        .getParameter(AscertiaConstants.UNSIGNED_DOCUMENT_URL);
 				
-				FacesContext fctx = WFUtil.createFacesContext(request
-				        .getSession().getServletContext(), request, response);
-				IWContext iwc = IWContext.getIWContext(fctx);
-				
 				String fileName;
 				if (documentURL == null || documentURL.trim().equals("")) {
 					
@@ -253,25 +198,9 @@ public class AscertiaServlet extends HttpServlet {
 					Long taskInstanceId = Long.valueOf(request
 					        .getParameter(AscertiaConstants.PARAM_TASK_ID));
 					
-					VariablesHandler variablesHandler = getVariablesHandler();
-					
-					BinaryVariable binaryVariable = getBinVar(variablesHandler,
-					    taskInstanceId, variableHash);
-					
-					inputStream = variablesHandler.getBinaryVariablesHandler()
-					        .getBinaryVariableContent(binaryVariable);
-					fileName = binaryVariable.getFileName();
-					
-					ByteArrayOutputStream baos = new ByteArrayOutputStream();
-					byte buffer[] = new byte[1024];
-					int noRead = 0;
-					noRead = inputStream.read(buffer, 0, 1024);
-					// Write out the stream to the file
-					while (noRead != -1) {
-						baos.write(buffer, 0, noRead);
-						noRead = inputStream.read(buffer, 0, 1024);
-					}
-					rawPdfFile = baos.toByteArray();
+					fileName = getFileName(variableHash, taskInstanceId);
+					rawPdfFile = getDocumentInputStream(variableHash,
+					    taskInstanceId);
 					
 					session.setAttribute(AscertiaConstants.PARAM_VARIABLE_HASH,
 					    variableHash);
@@ -300,36 +229,7 @@ public class AscertiaServlet extends HttpServlet {
 				}
 				
 				try {
-					// Adding empty page at the end of document to be signed
-					WebdavResource signingPage = getIWSlideService(iwc)
-					        .getWebdavResourceAuthenticatedAsRoot(
-					            CoreConstants.PATH_FILES_ROOT
-					                    + IWMainApplication
-					                            .getDefaultIWMainApplication()
-					                            .getSettings().getProperty(
-					                                SIGNATURE_PAGE_URL));
-					InputStream is = signingPage.getMethodData();
-					
-					ByteArrayOutputStream baos = new ByteArrayOutputStream();
-					byte buffer[] = new byte[1024];
-					int noRead = 0;
-					noRead = is.read(buffer, 0, 1024);
-					
-					while (noRead != -1) {
-						baos.write(buffer, 0, noRead);
-						noRead = is.read(buffer, 0, 1024);
-					}
-					byte[] signatresDoc = new byte[is.available()];
-					signatresDoc = baos.toByteArray();
-					
-					List<byte[]> pdfsToMerge = new ArrayList<byte[]>(2);
-					
-					pdfsToMerge.add(rawPdfFile);
-					pdfsToMerge.add(signatresDoc);
-					
-					ByteArrayOutputStream mergedPDFoutput = new ByteArrayOutputStream();
-					PDFUtil.concatPDFs(pdfsToMerge, mergedPDFoutput, true);
-					rawPdfFile = mergedPDFoutput.toByteArray();
+					rawPdfFile = addSignaturePage(rawPdfFile, iwc);
 				} catch (Exception e) {
 					// if empty page not found we will put signature on last page...
 				}
@@ -337,23 +237,7 @@ public class AscertiaServlet extends HttpServlet {
 				// Getting empty signature field
 				byte[] pdfFileWithEmptySignature = null;
 				
-				EmptySignatureFieldRequest emptySigFieldRequest = new EmptySignatureFieldRequest(
-				        "samples_test_client", IWMainApplication
-				                .getDefaultIWMainApplication().getSettings()
-				                .getProperty(PROP_EMPTY_SIGNATURE_PROFILE,
-				                    "adss:signing:profile:005"), rawPdfFile);
-				emptySigFieldRequest.overrideProfileAttribute(
-				    SigningRequest.SIGNING_REASON, "Testing");
-				logger
-				        .log(
-				            Level.INFO,
-				            "A request has been sent to create blank signature(s) on the PDF. Waiting for response...");
-				
-				String EMPTY_SIGNATURE_URL = ADSS_URL + "esi";
-				
-				/* Sending the above constructed request to the ADSS server */
-				EmptySignatureFieldResponse emptySigFieldResponse = (EmptySignatureFieldResponse) emptySigFieldRequest
-				        .send(EMPTY_SIGNATURE_URL);
+				EmptySignatureFieldResponse emptySigFieldResponse = getEmtptySignatureField(rawPdfFile);
 				
 				if (emptySigFieldResponse.isResponseSuccessfull()) {
 					
@@ -372,26 +256,8 @@ public class AscertiaServlet extends HttpServlet {
 				if (isResponseSuccessfull) {
 					isResponseSuccessfull = false;
 					
-					/* Constructing request for document hashing */
-
-					DocumentHashingRequest documentHashingRequest = new DocumentHashingRequest(
-					        ORIGINATOR_ID, SIGNATURE_PROFILE,
-					        pdfFileWithEmptySignature, Base64
-					                .decode(certificate));
-					
-					/*documentHashingRequest.overrideProfileAttribute(
-							SigningRequest.SIGNING_REASON, "asdasd");
-
-					documentHashingRequest.overrideProfileAttribute(
-							SigningRequest.SIGNING_LOCATION, "location");
-
-					documentHashingRequest.overrideProfileAttribute(
-							SigningRequest.CONTACT_INFO, "asd");*/
-
-					/* Sending request to the ADSS server */
-
-					DocumentHashingResponse documentHashingResponse = (DocumentHashingResponse) documentHashingRequest
-					        .send(HASHING_URL);
+					DocumentHashingResponse documentHashingResponse = getDocumentHash(
+					    pdfFileWithEmptySignature, certificate);
 					
 					if (documentHashingResponse.isResponseSuccessfull()) {
 						
@@ -404,9 +270,9 @@ public class AscertiaServlet extends HttpServlet {
 						    documentHashingResponse.getDocumentId());
 						session
 						        .setAttribute(
-						            AscertiaConstants.PARAM_LOCALE,
+						            AscertiaConstants.PARAM_LOCALIZED_FILE_PREFIX,
 						            request
-						                    .getAttribute(AscertiaConstants.PARAM_LOCALE));
+						                    .getParameter(AscertiaConstants.PARAM_LOCALIZED_FILE_PREFIX));
 						logger.log(Level.INFO,
 						    "Document hashing was successfull");
 						
@@ -426,36 +292,8 @@ public class AscertiaServlet extends HttpServlet {
 			 */
 
 			else {
-				session = request.getSession(false);
 				
-				/*
-				 * Input stream that reads the PKCS#7 bytes, that has been
-				 * calculated by GoSign applet
-				 */
-
-				InputStream obj_inputStream = request.getInputStream();
-				ByteArrayOutputStream obj_bos = new ByteArrayOutputStream();
-				byte[] byte_buffer = new byte[128];
-				int i_read = 0;
-				while ((i_read = obj_inputStream.read(byte_buffer)) > 0) {
-					obj_bos.write(byte_buffer, 0, i_read);
-					
-				}
-				
-				/* PKCS#7 bytes */
-
-				b_pkcs7 = obj_bos.toByteArray();
-				
-				/* Constructing request for signature assembly */
-
-				SignatureAssemblyRequest signatureAssemblyRequest = new SignatureAssemblyRequest(
-				        ORIGINATOR_ID, b_pkcs7, (String) session
-				                .getAttribute(SESSION_PARAM_DOCUMENT_ID));
-				
-				/* Sending request to the ADSS server */
-
-				SignatureAssemblyResponse signatureAssemblyResponse = (SignatureAssemblyResponse) signatureAssemblyRequest
-				        .send(ASSEMBLY_URL);
+				SignatureAssemblyResponse signatureAssemblyResponse = getSignatureAssembly(request);
 				
 				/* Setting dummy bytes */
 
@@ -475,22 +313,10 @@ public class AscertiaServlet extends HttpServlet {
 					String fileName = (String) session
 					        .getAttribute(SESSION_PARAM_FILENAME);
 					
-					Locale locale = session
-					        .getAttribute(AscertiaConstants.PARAM_LOCALE) != null ? new Locale(
-					        (String) session
-					                .getAttribute(AscertiaConstants.PARAM_LOCALE))
-					        : null;
+					String localizedPrefix =(String) session.getAttribute(AscertiaConstants.PARAM_LOCALIZED_FILE_PREFIX);
 					
 					// sometimes we get nullpointer here, god knows why..
-					IWContext iwc = null;
-					try {
-						FacesContext fctx = WFUtil.createFacesContext(request
-						        .getSession().getServletContext(), request,
-						    response);
-						iwc = IWContext.getIWContext(fctx);
-					} catch (Exception e) {
-						//if exception was thrown, there will be no localization for ya
-					}
+					
 					if (variableHash != null && taskInstanceId != null) {
 						session
 						        .removeAttribute(AscertiaConstants.PARAM_TASK_ID);
@@ -503,7 +329,7 @@ public class AscertiaServlet extends HttpServlet {
 						
 						saveSignedPDFAttachment(session, binaryVariable,
 						    taskInstanceId, variableHash, signedDocument,
-						    locale, iwc);
+						    localizedPrefix);
 						
 					} else if (taskInstanceId != null && fileName != null) {
 						
@@ -514,7 +340,8 @@ public class AscertiaServlet extends HttpServlet {
 						saveSignedPDFAsNewVariable(session, taskInstanceId,
 						    signedDocument, fileName);
 					}
-					session.removeAttribute(AscertiaConstants.PARAM_LOCALE);
+					session
+					        .removeAttribute(AscertiaConstants.PARAM_LOCALIZED_FILE_PREFIX);
 					logger.log(Level.INFO, "Documend successfully signed");
 				} else {
 					
@@ -580,10 +407,178 @@ public class AscertiaServlet extends HttpServlet {
 		
 	}
 	
+	protected byte[] getDocumentInputStream(Integer variableHash,
+	        Long taskInstanceId) throws IOException {
+		VariablesHandler variablesHandler = getVariablesHandler();
+		
+		BinaryVariable binaryVariable = getBinVar(variablesHandler,
+		    taskInstanceId, variableHash);
+		
+		InputStream inputStream = variablesHandler.getBinaryVariablesHandler()
+		        .getBinaryVariableContent(binaryVariable);
+		
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		byte buffer[] = new byte[1024];
+		int noRead = 0;
+		noRead = inputStream.read(buffer, 0, 1024);
+		// Write out the stream to the file
+		while (noRead != -1) {
+			baos.write(buffer, 0, noRead);
+			noRead = inputStream.read(buffer, 0, 1024);
+		}
+		return baos.toByteArray();
+	}
+	
+	protected String getFileName(Integer variableHash, Long taskInstanceId) {
+		VariablesHandler variablesHandler = getVariablesHandler();
+		
+		BinaryVariable binaryVariable = getBinVar(variablesHandler,
+		    taskInstanceId, variableHash);
+		
+		return binaryVariable.getFileName();
+	}
+	
+	protected byte[] addSignaturePage(byte[] rawPdfFile, IWContext iwc)
+	        throws Exception {
+		// Adding empty page at the end of document to be signed
+		WebdavResource signingPage = getIWSlideService()
+		        .getWebdavResourceAuthenticatedAsRoot(
+		            CoreConstants.PATH_FILES_ROOT
+		                    + IWMainApplication.getDefaultIWMainApplication()
+		                            .getSettings().getProperty(
+		                                SIGNATURE_PAGE_URL));
+		InputStream is = signingPage.getMethodData();
+		
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		byte buffer[] = new byte[1024];
+		int noRead = 0;
+		noRead = is.read(buffer, 0, 1024);
+		
+		while (noRead != -1) {
+			baos.write(buffer, 0, noRead);
+			noRead = is.read(buffer, 0, 1024);
+		}
+		byte[] signatresDoc = new byte[is.available()];
+		signatresDoc = baos.toByteArray();
+		
+		List<byte[]> pdfsToMerge = new ArrayList<byte[]>(2);
+		
+		pdfsToMerge.add(rawPdfFile);
+		pdfsToMerge.add(signatresDoc);
+		
+		ByteArrayOutputStream mergedPDFoutput = new ByteArrayOutputStream();
+		PDFUtil.concatPDFs(pdfsToMerge, mergedPDFoutput, true);
+		return mergedPDFoutput.toByteArray();
+	}
+	
+	protected EmptySignatureFieldResponse getEmtptySignatureField(
+	        byte[] rawPdfFile) {
+		
+		String ADSS_URL = IWMainApplication.getDefaultIWMainApplication()
+		        .getSettings().getProperty(PROP_ADSS_SERVER_URL,
+		            "http://82.221.28.123/adss/signing/");
+		
+		String EMPTY_SIGNATURE_URL = ADSS_URL
+		        + IWMainApplication.getDefaultIWMainApplication().getSettings()
+		                .getProperty(PROP_ADDS_EMPTY_SIGNATURE_URI_END, "esi");
+		
+		EmptySignatureFieldRequest emptySigFieldRequest = new EmptySignatureFieldRequest(
+		        "samples_test_client", IWMainApplication
+		                .getDefaultIWMainApplication().getSettings()
+		                .getProperty(PROP_EMPTY_SIGNATURE_PROFILE,
+		                    "adss:signing:profile:005"), rawPdfFile);
+		emptySigFieldRequest.overrideProfileAttribute(
+		    SigningRequest.SIGNING_REASON, "Testing");
+		logger
+		        .log(
+		            Level.INFO,
+		            "A request has been sent to create blank signature(s) on the PDF. Waiting for response...");
+		
+		/* Sending the above constructed request to the ADSS server */
+		return (EmptySignatureFieldResponse) emptySigFieldRequest
+		        .send(EMPTY_SIGNATURE_URL);
+	}
+	
+	protected DocumentHashingResponse getDocumentHash(
+	        byte[] pdfFileWithEmptySignature, String certificate) {
+		
+		String ADSS_URL = IWMainApplication.getDefaultIWMainApplication()
+		        .getSettings().getProperty(PROP_ADSS_SERVER_URL,
+		            "http://82.221.28.123/adss/signing/");
+		
+		String HASHING_URL = ADSS_URL
+		        + IWMainApplication.getDefaultIWMainApplication().getSettings()
+		                .getProperty(PROP_HASHING_URI_END, "dhi");
+		
+		String ORIGINATOR_ID = IWMainApplication.getDefaultIWMainApplication()
+		        .getSettings().getProperty(PROP_ADSS_SERVER_ORIGINATOR_ID,
+		            "idega");
+		String SIGNATURE_PROFILE = IWMainApplication
+		        .getDefaultIWMainApplication().getSettings().getProperty(
+		            PROP_SIGNATURE_PROFILE, "adss:signing:profile:007");
+		
+		DocumentHashingRequest documentHashingRequest = new DocumentHashingRequest(
+		        ORIGINATOR_ID, SIGNATURE_PROFILE, pdfFileWithEmptySignature,
+		        Base64.decode(certificate));
+		
+		return (DocumentHashingResponse) documentHashingRequest
+		        .send(HASHING_URL);
+	}
+	
+	public SignatureAssemblyResponse getSignatureAssembly(
+	        HttpServletRequest request) throws Exception {
+		
+		/**
+		 * URL of deployed PDF Signer Server
+		 */
+		String ADSS_URL = IWMainApplication.getDefaultIWMainApplication()
+		        .getSettings().getProperty(PROP_ADSS_SERVER_URL,
+		            "http://82.221.28.123/adss/signing/");
+		
+		/**
+		 * URL of deployed PDF Signer Server, where Signature Assembly's request(s) will be sent
+		 */
+		String ASSEMBLY_URL = ADSS_URL
+		        + IWMainApplication.getDefaultIWMainApplication().getSettings()
+		                .getProperty(PROP_ASSEMBLY_URL_END, "sai");
+		
+		/**
+		 * User name, registered on PDF Signer Server
+		 */
+		String ORIGINATOR_ID = IWMainApplication.getDefaultIWMainApplication()
+		        .getSettings().getProperty(PROP_ADSS_SERVER_ORIGINATOR_ID,
+		            "idega");
+		/*
+		 * Input stream that reads the PKCS#7 bytes, that has been
+		 * calculated by GoSign applet
+		 */
+
+		InputStream obj_inputStream = request.getInputStream();
+		ByteArrayOutputStream obj_bos = new ByteArrayOutputStream();
+		byte[] byte_buffer = new byte[128];
+		int i_read = 0;
+		while ((i_read = obj_inputStream.read(byte_buffer)) > 0) {
+			obj_bos.write(byte_buffer, 0, i_read);
+			
+		}
+		
+		byte[] pkcs7 = obj_bos.toByteArray();
+		
+		/* Constructing request for signature assembly */
+
+		SignatureAssemblyRequest signatureAssemblyRequest = new SignatureAssemblyRequest(
+		        ORIGINATOR_ID, pkcs7, (String) request.getSession(false)
+		                .getAttribute(SESSION_PARAM_DOCUMENT_ID));
+		
+		/* Sending request to the ADSS server */
+
+		return (SignatureAssemblyResponse) signatureAssemblyRequest
+		        .send(ASSEMBLY_URL);
+	}
+	
 	protected void saveSignedPDFAttachment(HttpSession session,
 	        BinaryVariable binaryVariable, long taskInstanceId,
-	        Integer binaryVariableHash, byte[] signedPDF, Locale locale,
-	        IWContext iwc) throws Exception {
+	        Integer binaryVariableHash, byte[] signedPDF, String localizedPrefix) throws Exception {
 		
 		TaskInstanceW taskInstance = getBpmFactory()
 		        .getProcessManagerByTaskInstanceId(taskInstanceId)
@@ -595,10 +590,10 @@ public class AscertiaServlet extends HttpServlet {
 		
 		try {
 			String description;
-			if (locale != null && iwc != null) {
-				description = iwc.getIWMainApplication().getBundle(
+			if (localizedPrefix != null) {
+				description = localizedPrefix;/* iwc.getIWMainApplication().getBundle(
 				    "com.idega.ascertia").getResourceBundle(iwc)
-				        .getLocalizedString("signed", "Signed");
+				        .getLocalizedString("signed", "Signed");*/
 			} else {
 				description = "Signed";
 			}
@@ -738,9 +733,9 @@ public class AscertiaServlet extends HttpServlet {
 		return variablesHandler;
 	}
 	
-	private IWSlideService getIWSlideService(IWContext iwac)
-	        throws IBOLookupException {
-		return (IWSlideService) IBOLookup.getServiceInstance(iwac,
+	private IWSlideService getIWSlideService() throws IBOLookupException {
+		return (IWSlideService) IBOLookup.getServiceInstance(IWMainApplication
+		        .getDefaultIWMainApplication().getIWApplicationContext(),
 		    IWSlideService.class);
 	}
 	
