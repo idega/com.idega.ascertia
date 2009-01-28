@@ -176,7 +176,7 @@ public class AscertiaBPMSigner extends Block {
 		
 		script.addScriptLine("embedAscertiaApplet('" + serverURL
 	        + goSignRootRootURI + "','" + formName + "','"+ getLocalizedString("note_message",
-			    "''", iwc)+ "');");
+			    "", iwc)+ "');");
 		script.addScriptLine("GoSign_SetTargetURL('" + targetURL + "');");
 		
 		BuilderService builderService = BuilderServiceFactory

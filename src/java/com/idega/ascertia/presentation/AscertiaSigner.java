@@ -196,7 +196,7 @@ public class AscertiaSigner extends Block {
 		Script script = new Script();
 		script.addScriptLine("embedAscertiaApplet('" + serverURL
 		        + goSignRootRootURI + "','" + formName + "','"+ getLocalizedString("note_message",
-				    "''", iwc)+ "');");
+				    "", iwc)+ "');");
 		script.addScriptLine("GoSign_SetTargetURL('" + targetURL + "');");
 		
 		BuilderService builderService = BuilderServiceFactory
