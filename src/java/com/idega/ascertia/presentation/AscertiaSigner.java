@@ -1,7 +1,11 @@
 package com.idega.ascertia.presentation;
 
 import java.rmi.RemoteException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.StringTokenizer;
 
 import com.idega.ascertia.AscertiaConstants;
 import com.idega.ascertia.AscertiaPDFPrinter;
@@ -47,10 +51,8 @@ public class AscertiaSigner extends Block {
 	private String goSignRootRootURI;
 	
 	private String targetURL;
-	private String formName;
-	private String fileName;
-	private String filePath;
 	
+	private static final String formName = "signingForm1";
 	private static final String PARAMETER_ACTION = "signing_action";
 	private static final int PARAMETER_SHOW_UNSIGNED_PDF = 1;
 	private static final int PARAMETER_SHOW_SIGNED_PDF = 2;
@@ -60,22 +62,6 @@ public class AscertiaSigner extends Block {
 		super();
 	}
 	
-	public String getFormName() {
-		return formName;
-	}
-	
-	public void setFormName(String formName) {
-		this.formName = formName;
-	}
-	
-	public String getFilePath() {
-		return filePath;
-	}
-	
-	public void setFilePath(String filePath) {
-		this.filePath = filePath;
-	}
-	
 	public void main(IWContext iwc) throws RemoteException {
 		
 		web2 = ELUtil.getInstance().getBean(Web2Business.class);
@@ -83,7 +69,6 @@ public class AscertiaSigner extends Block {
 		goSignRootRootURI = bundle
 		        .getVirtualPathWithFileNameString("javascript/GoSign");
 		goSignJSFile = goSignRootRootURI + "/lib/gosign.js";
-		setFormName("signingForm1");
 		
 		switch (parseAction(iwc)) {
 			case PARAMETER_SHOW_UNSIGNED_PDF:
@@ -106,6 +91,7 @@ public class AscertiaSigner extends Block {
 	
 	public void showSigningForm(IWContext iwc) throws RemoteException {
 		
+		String fileName;
 		String serverURL = iwc.getServerURL();
 		serverURL = (serverURL.endsWith("/")) ? serverURL.substring(0,
 		    serverURL.length() - 1) : serverURL;
@@ -189,14 +175,14 @@ public class AscertiaSigner extends Block {
 		mainDiv.add(documentFrame);
 		
 		Layer signingLayer = new Layer();
-		signingLayer.add(addForm(iwc, documentURL));
+		signingLayer.add(createForm(iwc, documentURL));
 		signingLayer.setStyleClass("under_frame_layer");
 		mainDiv.add(signingLayer);
 		
 		Script script = new Script();
 		script.addScriptLine("embedAscertiaApplet('" + serverURL
-		        + goSignRootRootURI + "','" + formName + "','"+ getLocalizedString("note_message",
-				    "", iwc)+ "');");
+		        + goSignRootRootURI + "','" + formName + "','"
+		        + getLocalizedString("note_message", "", iwc) + "');");
 		script.addScriptLine("GoSign_SetTargetURL('" + targetURL + "');");
 		
 		BuilderService builderService = BuilderServiceFactory
@@ -209,120 +195,90 @@ public class AscertiaSigner extends Block {
 		                            .valueOf(PARAMETER_SHOW_SIGNED_PDF)) }));
 		
 		script.addScriptLine("GoSign_SetResultPage('" + successPath + "');");
-		// script.addScriptLine("GoSign_SetErrorPage('" + errorPath + "');");
 		
 		mainDiv.add(script);
 		
 		add(mainDiv);
 	}
 	
-	protected Form addForm(IWContext iwc, String documentURL)
+	protected Form createForm(IWContext iwc, String documentURL)
 	        throws RemoteException {
 		Form form = new Form();
-		form.setId(getFormName());
-		form.setMarkupAttribute("name", getFormName());
+		form.setId(formName);
+		form.setMarkupAttribute("name", formName);
 		
-		if (documentURL != null) {
-			addDocumentURLField(iwc, form, documentURL);
-		} else {
-			addTaskIdAndHashValueFields(iwc, form);
-		}
-		
+		addFormParams(iwc, form);
 		return form;
 	}
 	
-	protected void addDocumentURLField(IWContext iwc, Form form,
-	        String documentURL) throws RemoteException {
-		HiddenInput hiddenInputDocumontURL = new HiddenInput();
-		hiddenInputDocumontURL.setName(AscertiaConstants.DOCUMENT_URL_ID);
-		hiddenInputDocumontURL.setId(AscertiaConstants.DOCUMENT_URL_ID);
+	private void addSigningOptions(Form form, IWContext iwc) {
 		
-		hiddenInputDocumontURL.setValue(documentURL);
-		form.add(hiddenInputDocumontURL);
+		String avalableSignaturePlaces = iwc
+		        .getParameter(AscertiaConstants.PARAM_SIGNATURE_PLACES_USED);
+		DropdownMenu signaturePlace = new DropdownMenu();
+		signaturePlace.setId(AscertiaConstants.PARAM_SELECTED_SIGNATURE_PLACE);
+		signaturePlace
+		        .setName(AscertiaConstants.PARAM_SELECTED_SIGNATURE_PLACE);
 		
-		BuilderService builderService = BuilderServiceFactory
-		        .getBuilderService(iwc);
+		StringTokenizer stringTokenizer = new StringTokenizer(
+		        avalableSignaturePlaces, ";");
 		
-		String successPath = builderService.getUriToObject(
-		    AscertiaSigningForm.class, Arrays
-		            .asList(new AdvancedProperty[] { new AdvancedProperty(
-		                    PARAMETER_ACTION, String
-		                            .valueOf(PARAMETER_SHOW_SIGNED_PDF)) }));
+		while (stringTokenizer.hasMoreElements()) {
+			String menuElement = stringTokenizer.nextToken();
+			signaturePlace.addMenuElement(menuElement, getLocalizedString(
+			    menuElement, menuElement, iwc));
+		}
+		if (signaturePlace.getOptions().size()<2){
+			signaturePlace.setDisabled(true);
+		}
+		form.add(signaturePlace);
 		
-		String errorPath = builderService.getUriToObject(
-		    AscertiaSigningForm.class, Arrays.asList(new AdvancedProperty[] {
-		            new AdvancedProperty(PARAMETER_ACTION, String
-		                    .valueOf(PARAMETER_SHOW_UNSIGNED_PDF)),
-		            new AdvancedProperty(
-		                    AscertiaConstants.UNSIGNED_DOCUMENT_URL,
-		                    documentURL) }));
-		
-		addCertificatesList(form);
-		
-		Link sign = new Link(getLocalizedString("sign_document",
-		    "Sign document", iwc));
-		sign.setURL("javascript:void(0)");
-		sign.setOnClick("signDocument('" + successPath + "','" + errorPath
-		        + "','" + getLocalizedString("signing", "Signing...", iwc)
-		        + "');");
-		form.add(sign);
+		DropdownMenu certificates = new DropdownMenu();
+		certificates.setId("GoSignCertificateList");
+		certificates.setName("GoSignCertificateList");
+		form.add(certificates);
 	}
 	
-	protected void addTaskIdAndHashValueFields(IWContext iwc, Form form)
+	public String getBundleIdentifier() {
+		return IW_BUNDLE_IDENTIFIER;
+	}
+	
+	protected void addFormParams(IWContext iwc, Form form)
 	        throws RemoteException {
-		HiddenInput hiddenInputVariableHash = new HiddenInput();
-		hiddenInputVariableHash.setID(AscertiaConstants.PARAM_VARIABLE_HASH);
-		hiddenInputVariableHash.setName(AscertiaConstants.PARAM_VARIABLE_HASH);
-		hiddenInputVariableHash.setValue(iwc
-		        .getParameter(AscertiaConstants.PARAM_VARIABLE_HASH));
-		form.add(hiddenInputVariableHash);
 		
-		HiddenInput hiddenInputTaskId = new HiddenInput();
-		hiddenInputTaskId.setID(AscertiaConstants.PARAM_TASK_ID);
-		hiddenInputTaskId.setName(AscertiaConstants.PARAM_TASK_ID);
-		hiddenInputTaskId.setValue(iwc
-		        .getParameter(AscertiaConstants.PARAM_TASK_ID));
-		form.add(hiddenInputTaskId);
+		List<AdvancedProperty> paramList = new ArrayList<AdvancedProperty>();
 		
-		HiddenInput hiddenInputTaskLocale = new HiddenInput();
-		hiddenInputTaskLocale
-		        .setID(AscertiaConstants.PARAM_LOCALIZED_FILE_PREFIX);
-		hiddenInputTaskLocale
-		        .setName(AscertiaConstants.PARAM_LOCALIZED_FILE_PREFIX);
-		hiddenInputTaskLocale.setValue(iwc.getIWMainApplication().getBundle(
-		    "com.idega.ascertia").getResourceBundle(iwc).getLocalizedString(
-		    "signed", "Signed"));
-		form.add(hiddenInputTaskLocale);
+		@SuppressWarnings("unchecked")
+		Enumeration<String> paramNames = iwc.getParameterNames();
 		
+		addSigningOptions(form, iwc);
+		
+		while (paramNames.hasMoreElements()) {
+			String paramName = paramNames.nextElement();
+			
+			HiddenInput hiddenInput = new HiddenInput();
+			hiddenInput.setID(paramName);
+			hiddenInput.setName(paramName);
+			hiddenInput.setValue(iwc.getParameter(paramName));
+			form.add(hiddenInput);
+			
+			paramList.add(new AdvancedProperty(paramName, iwc
+			        .getParameter(paramName)));
+		}
+		
+		paramList.add(new AdvancedProperty(PARAMETER_ACTION, String
+		        .valueOf(PARAMETER_SHOW_UNSIGNED_PDF)));
 		BuilderService builderService = BuilderServiceFactory
 		        .getBuilderService(iwc);
 		
 		String successPath = builderService.getUriToObject(
 		    AscertiaSigner.class, Arrays
-		            .asList(new AdvancedProperty[] { new AdvancedProperty(
-		                    PARAMETER_ACTION, String
-		                            .valueOf(PARAMETER_SHOW_SIGNED_PDF)) }));
+		            .asList(new AdvancedProperty(PARAMETER_ACTION, String
+		                    .valueOf(PARAMETER_SHOW_SIGNED_PDF))));
 		
-		String errorPath = builderService
-		        .getUriToObject(
-		            AscertiaSigner.class,
-		            Arrays
-		                    .asList(new AdvancedProperty[] {
-		                            new AdvancedProperty(
-		                                    PARAMETER_ACTION,
-		                                    String
-		                                            .valueOf(PARAMETER_SHOW_UNSIGNED_PDF)),
-		                            
-		                            new AdvancedProperty(
-		                                    AscertiaConstants.PARAM_VARIABLE_HASH,
-		                                    iwc
-		                                            .getParameter(AscertiaConstants.PARAM_VARIABLE_HASH)),
-		                            new AdvancedProperty(
-		                                    AscertiaConstants.PARAM_TASK_ID,
-		                                    iwc
-		                                            .getParameter(AscertiaConstants.PARAM_TASK_ID)) }));
+		String errorPath = builderService.getUriToObject(AscertiaSigner.class,
+		    paramList);
 		
-		addCertificatesList(form);
 		Link sign = new Link(getLocalizedString("sign_document",
 		    "Sign document", iwc));
 		sign.setURL("javascript:void(0)");
@@ -330,13 +286,6 @@ public class AscertiaSigner extends Block {
 		        + "','" + getLocalizedString("signing", "Signing...", iwc)
 		        + "');");
 		form.add(sign);
-	}
-	
-	private void addCertificatesList(Form form) {
-		DropdownMenu certificates = new DropdownMenu();
-		certificates.setId("GoSignCertificateList");
-		certificates.setName("GoSignCertificateList");
-		form.add(certificates);
 	}
 	
 	protected void showSignedPdf(IWContext iwc) throws RemoteException {
@@ -395,9 +344,4 @@ public class AscertiaSigner extends Block {
 		
 		add(mainDiv);
 	}
-	
-	public String getBundleIdentifier() {
-		return IW_BUNDLE_IDENTIFIER;
-	}
-	
 }

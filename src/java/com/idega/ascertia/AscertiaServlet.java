@@ -1,13 +1,5 @@
-/*
- * Copyright (C) 2008 Idega Software hf. All Rights Reserved.
- *
- * This software is the proprietary information of Idega hf.
- * Use is subject to license terms.
- */
-
 package com.idega.ascertia;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,19 +29,12 @@ import com.ascertia.adss.client.api.SignatureAssemblyRequest;
 import com.ascertia.adss.client.api.SignatureAssemblyResponse;
 import com.ascertia.adss.client.api.SigningRequest;
 import com.idega.block.pdf.util.PDFUtil;
-import com.idega.block.process.variables.Variable;
 import com.idega.business.IBOLookup;
 import com.idega.business.IBOLookupException;
 import com.idega.idegaweb.IWMainApplication;
-import com.idega.jbpm.exe.BPMFactory;
-import com.idega.jbpm.exe.TaskInstanceW;
-import com.idega.jbpm.variables.BinaryVariable;
-import com.idega.jbpm.variables.VariablesHandler;
-import com.idega.jbpm.view.ViewSubmission;
 import com.idega.presentation.IWContext;
 import com.idega.slide.business.IWSlideService;
 import com.idega.util.CoreConstants;
-import com.idega.util.StringUtil;
 import com.idega.util.expression.ELUtil;
 
 public class AscertiaServlet extends HttpServlet {
@@ -63,34 +48,11 @@ public class AscertiaServlet extends HttpServlet {
 	
 	private Logger logger = Logger.getLogger(AscertiaServlet.class.getName());
 	
-	public static final String PROP_ADSS_SERVER_URL = "adss_server_url";
-	public static final String PROP_SIGNATURE_PROFILE = "signature_profile";
-	public static final String PROP_EMPTY_SIGNATURE_PROFILE = "empty_signature_profile";
-	public static final String PROP_HASHING_URI_END = "adss_server_hashing_uri_end";
-	public static final String PROP_ASSEMBLY_URL_END = "adss_server_asembly_uri_end";
-	public static final String PROP_ADSS_SERVER_ORIGINATOR_ID = "adss_server_originator_id";
-	public static final String PROP_ADDS_EMPTY_SIGNATURE_URI_END = "adss_empty_signature_uri_end";
-	
-	public static final String SIGNATURE_PAGE_URL = "signature_page_path";
-	
-	// private String errorMessage = "Error message hasn't been set properly.";
-	
 	private static final String SESSION_PARAM_FILENAME = "file_name";
 	private static final String SESSION_PARAM_DOCUMENT_ID = "dociment_id";
 	
 	@Autowired
-	private BPMFactory bpmFactory;
-	
-	@Autowired
-	private VariablesHandler variablesHandler;
-	
-	public BPMFactory getBpmFactory() {
-		return bpmFactory;
-	}
-	
-	public void setBpmFactory(BPMFactory bpmFactory) {
-		this.bpmFactory = bpmFactory;
-	}
+	private BPMHelper bpmHelper;
 	
 	// Initialize global variables
 	
@@ -197,9 +159,10 @@ public class AscertiaServlet extends HttpServlet {
 					Long taskInstanceId = Long.valueOf(request
 					        .getParameter(AscertiaConstants.PARAM_TASK_ID));
 					
-					fileName = getFileName(variableHash, taskInstanceId);
-					rawPdfFile = getDocumentInputStream(variableHash,
+					fileName = getBpmHelper().getFileName(variableHash,
 					    taskInstanceId);
+					rawPdfFile = getBpmHelper().getDocumentInputStream(
+					    variableHash, taskInstanceId);
 					
 					session.setAttribute(AscertiaConstants.PARAM_VARIABLE_HASH,
 					    variableHash);
@@ -235,28 +198,43 @@ public class AscertiaServlet extends HttpServlet {
 				
 				// Getting empty signature field
 				byte[] pdfFileWithEmptySignature = null;
-				
-				EmptySignatureFieldResponse emptySigFieldResponse = getEmtptySignatureField(rawPdfFile);
-				
-				if (emptySigFieldResponse.isResponseSuccessfull()) {
+				if (request
+				        .getParameter(AscertiaConstants.PARAM_ADD_EMPTY_SIGNATURES) == null
+				        || !request.getParameter(
+				            AscertiaConstants.PARAM_ADD_EMPTY_SIGNATURES)
+				                .equalsIgnoreCase(Boolean.FALSE.toString())) {
+					EmptySignatureFieldResponse emptySigFieldResponse = getEmtptySignatureField(
+					    rawPdfFile,
+					    request
+					            .getParameter(AscertiaConstants.PARAM_SIGNATURE_PROFILE_TO_USE));
 					
-					pdfFileWithEmptySignature = emptySigFieldResponse
-					        .getSignedDocument();
-					isResponseSuccessfull = true;
-					logger
-					        .log(Level.INFO,
-					            "Empty signature request has been processed successfully.");
+					if (emptySigFieldResponse.isResponseSuccessfull()) {
+						
+						pdfFileWithEmptySignature = emptySigFieldResponse
+						        .getSignedDocument();
+						isResponseSuccessfull = true;
+						logger
+						        .log(Level.INFO,
+						            "Empty signature request has been processed successfully.");
+					} else {
+						isResponseSuccessfull = false;
+						logger.log(Level.SEVERE, emptySigFieldResponse
+						        .getErrorMessage());
+					}
 				} else {
-					isResponseSuccessfull = false;
-					logger.log(Level.SEVERE, emptySigFieldResponse
-					        .getErrorMessage());
+					pdfFileWithEmptySignature = rawPdfFile;
+					// empty signature fields already added
+					isResponseSuccessfull = true;
+					
 				}
-				
 				if (isResponseSuccessfull) {
 					isResponseSuccessfull = false;
 					
 					DocumentHashingResponse documentHashingResponse = getDocumentHash(
-					    pdfFileWithEmptySignature, certificate);
+					    pdfFileWithEmptySignature,
+					    certificate,
+					    request
+					            .getParameter(AscertiaConstants.PARAM_SELECTED_SIGNATURE_PLACE));
 					
 					if (documentHashingResponse.isResponseSuccessfull()) {
 						
@@ -274,7 +252,16 @@ public class AscertiaServlet extends HttpServlet {
 						                    .getParameter(AscertiaConstants.PARAM_LOCALIZED_FILE_PREFIX));
 						logger.log(Level.INFO,
 						    "Document hashing was successfull");
-						
+						session
+						        .setAttribute(
+						            AscertiaConstants.PARAM_SELECTED_SIGNATURE_PLACE,
+						            request
+						                    .getParameter(AscertiaConstants.PARAM_SELECTED_SIGNATURE_PLACE));
+						session
+						        .setAttribute(
+						            AscertiaConstants.PARAM_SIGNATURE_PROFILE_TO_USE,
+						            request
+						                    .getParameter(AscertiaConstants.PARAM_SIGNATURE_PROFILE_TO_USE));
 					} else {
 						isResponseSuccessfull = false;
 						errorMessage = documentHashingResponse
@@ -312,23 +299,28 @@ public class AscertiaServlet extends HttpServlet {
 					String fileName = (String) session
 					        .getAttribute(SESSION_PARAM_FILENAME);
 					
-					String localizedPrefix =(String) session.getAttribute(AscertiaConstants.PARAM_LOCALIZED_FILE_PREFIX);
-					
-					// sometimes we get nullpointer here, god knows why..
+					String localizedPrefix = (String) session
+					        .getAttribute(AscertiaConstants.PARAM_LOCALIZED_FILE_PREFIX);
 					
 					if (variableHash != null && taskInstanceId != null) {
 						session
 						        .removeAttribute(AscertiaConstants.PARAM_TASK_ID);
 						session
 						        .removeAttribute(AscertiaConstants.PARAM_VARIABLE_HASH);
-						VariablesHandler variablesHandler = getVariablesHandler();
 						
-						BinaryVariable binaryVariable = getBinVar(
-						    variablesHandler, taskInstanceId, variableHash);
+						AscertiaData data = getBpmHelper()
+						        .saveSignedPDFAttachment(
+						            taskInstanceId,
+						            variableHash,
+						            signedDocument,
+						            localizedPrefix,
+						            (String) session
+						                    .getAttribute(AscertiaConstants.PARAM_SELECTED_SIGNATURE_PLACE),
+						            (String) session
+						                    .getAttribute(AscertiaConstants.PARAM_SIGNATURE_PROFILE_TO_USE));
 						
-						saveSignedPDFAttachment(session, binaryVariable,
-						    taskInstanceId, variableHash, signedDocument,
-						    localizedPrefix);
+						session.setAttribute(
+						    AscertiaConstants.PARAM_ASCERTIA_DATA, data);
 						
 					} else if (taskInstanceId != null && fileName != null) {
 						
@@ -336,8 +328,17 @@ public class AscertiaServlet extends HttpServlet {
 						        .removeAttribute(AscertiaConstants.PARAM_TASK_ID);
 						session.removeAttribute(SESSION_PARAM_FILENAME);
 						
-						saveSignedPDFAsNewVariable(session, taskInstanceId,
-						    signedDocument, fileName);
+						AscertiaData data = getBpmHelper()
+						        .saveSignedPDFAsNewVariable(
+						            taskInstanceId,
+						            signedDocument,
+						            fileName,
+						            (String) session
+						                    .getAttribute(AscertiaConstants.PARAM_SELECTED_SIGNATURE_PLACE),
+						            (String) session
+						                    .getAttribute(AscertiaConstants.PARAM_SIGNATURE_PROFILE_TO_USE));
+						session.setAttribute(
+						    AscertiaConstants.PARAM_ASCERTIA_DATA, data);
 					}
 					session
 					        .removeAttribute(AscertiaConstants.PARAM_LOCALIZED_FILE_PREFIX);
@@ -406,37 +407,6 @@ public class AscertiaServlet extends HttpServlet {
 		
 	}
 	
-	protected byte[] getDocumentInputStream(Integer variableHash,
-	        Long taskInstanceId) throws IOException {
-		VariablesHandler variablesHandler = getVariablesHandler();
-		
-		BinaryVariable binaryVariable = getBinVar(variablesHandler,
-		    taskInstanceId, variableHash);
-		
-		InputStream inputStream = variablesHandler.getBinaryVariablesHandler()
-		        .getBinaryVariableContent(binaryVariable);
-		
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		byte buffer[] = new byte[1024];
-		int noRead = 0;
-		noRead = inputStream.read(buffer, 0, 1024);
-		// Write out the stream to the file
-		while (noRead != -1) {
-			baos.write(buffer, 0, noRead);
-			noRead = inputStream.read(buffer, 0, 1024);
-		}
-		return baos.toByteArray();
-	}
-	
-	protected String getFileName(Integer variableHash, Long taskInstanceId) {
-		VariablesHandler variablesHandler = getVariablesHandler();
-		
-		BinaryVariable binaryVariable = getBinVar(variablesHandler,
-		    taskInstanceId, variableHash);
-		
-		return binaryVariable.getFileName();
-	}
-	
 	protected byte[] addSignaturePage(byte[] rawPdfFile, IWContext iwc)
 	        throws Exception {
 		// Adding empty page at the end of document to be signed
@@ -445,7 +415,7 @@ public class AscertiaServlet extends HttpServlet {
 		            CoreConstants.PATH_FILES_ROOT
 		                    + IWMainApplication.getDefaultIWMainApplication()
 		                            .getSettings().getProperty(
-		                                SIGNATURE_PAGE_URL));
+		                                AscertiaConstants.SIGNATURE_PAGE_URL));
 		InputStream is = signingPage.getMethodData();
 		
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -471,21 +441,28 @@ public class AscertiaServlet extends HttpServlet {
 	}
 	
 	protected EmptySignatureFieldResponse getEmtptySignatureField(
-	        byte[] rawPdfFile) {
+	        byte[] rawPdfFile, String epmtySignateProfile) {
 		
 		String ADSS_URL = IWMainApplication.getDefaultIWMainApplication()
-		        .getSettings().getProperty(PROP_ADSS_SERVER_URL,
+		        .getSettings().getProperty(
+		            AscertiaConstants.PROP_ADSS_SERVER_URL,
 		            "http://82.221.28.123/adss/signing/");
 		
 		String EMPTY_SIGNATURE_URL = ADSS_URL
-		        + IWMainApplication.getDefaultIWMainApplication().getSettings()
-		                .getProperty(PROP_ADDS_EMPTY_SIGNATURE_URI_END, "esi");
+		        + IWMainApplication
+		                .getDefaultIWMainApplication()
+		                .getSettings()
+		                .getProperty(
+		                    AscertiaConstants.PROP_ADDS_EMPTY_SIGNATURE_URI_END,
+		                    "esi");
+		String ORIGINATOR_ID = IWMainApplication.getDefaultIWMainApplication()
+		        .getSettings().getProperty(
+		            AscertiaConstants.PROP_ADSS_SERVER_ORIGINATOR_ID, "idega");
 		
 		EmptySignatureFieldRequest emptySigFieldRequest = new EmptySignatureFieldRequest(
-		        "samples_test_client", IWMainApplication
-		                .getDefaultIWMainApplication().getSettings()
-		                .getProperty(PROP_EMPTY_SIGNATURE_PROFILE,
-		                    "adss:signing:profile:005"), rawPdfFile);
+		        ORIGINATOR_ID, IWMainApplication.getDefaultIWMainApplication()
+		                .getSettings().getProperty(epmtySignateProfile,
+		                    "adss:signing.profile:010"), rawPdfFile);
 		emptySigFieldRequest.overrideProfileAttribute(
 		    SigningRequest.SIGNING_REASON, "Testing");
 		logger
@@ -499,27 +476,32 @@ public class AscertiaServlet extends HttpServlet {
 	}
 	
 	protected DocumentHashingResponse getDocumentHash(
-	        byte[] pdfFileWithEmptySignature, String certificate) {
+	        byte[] pdfFileWithEmptySignature, String certificate,
+	        String signaturePlace) {
 		
 		String ADSS_URL = IWMainApplication.getDefaultIWMainApplication()
-		        .getSettings().getProperty(PROP_ADSS_SERVER_URL,
+		        .getSettings().getProperty(
+		            AscertiaConstants.PROP_ADSS_SERVER_URL,
 		            "http://82.221.28.123/adss/signing/");
 		
 		String HASHING_URL = ADSS_URL
 		        + IWMainApplication.getDefaultIWMainApplication().getSettings()
-		                .getProperty(PROP_HASHING_URI_END, "dhi");
+		                .getProperty(AscertiaConstants.PROP_HASHING_URI_END,
+		                    "dhi");
 		
 		String ORIGINATOR_ID = IWMainApplication.getDefaultIWMainApplication()
-		        .getSettings().getProperty(PROP_ADSS_SERVER_ORIGINATOR_ID,
-		            "idega");
+		        .getSettings().getProperty(
+		            AscertiaConstants.PROP_ADSS_SERVER_ORIGINATOR_ID, "idega");
 		String SIGNATURE_PROFILE = IWMainApplication
 		        .getDefaultIWMainApplication().getSettings().getProperty(
-		            PROP_SIGNATURE_PROFILE, "adss:signing:profile:007");
+		            signaturePlace, "adss:signing:profile:011");
 		
 		DocumentHashingRequest documentHashingRequest = new DocumentHashingRequest(
 		        ORIGINATOR_ID, SIGNATURE_PROFILE, pdfFileWithEmptySignature,
 		        Base64.decode(certificate));
 		
+		/*documentHashingRequest.overrideProfileAttribute(
+		    SigningRequest.SIGNING_FIELD, "Right");*/
 		return (DocumentHashingResponse) documentHashingRequest
 		        .send(HASHING_URL);
 	}
@@ -531,7 +513,8 @@ public class AscertiaServlet extends HttpServlet {
 		 * URL of deployed PDF Signer Server
 		 */
 		String ADSS_URL = IWMainApplication.getDefaultIWMainApplication()
-		        .getSettings().getProperty(PROP_ADSS_SERVER_URL,
+		        .getSettings().getProperty(
+		            AscertiaConstants.PROP_ADSS_SERVER_URL,
 		            "http://82.221.28.123/adss/signing/");
 		
 		/**
@@ -539,19 +522,19 @@ public class AscertiaServlet extends HttpServlet {
 		 */
 		String ASSEMBLY_URL = ADSS_URL
 		        + IWMainApplication.getDefaultIWMainApplication().getSettings()
-		                .getProperty(PROP_ASSEMBLY_URL_END, "sai");
+		                .getProperty(AscertiaConstants.PROP_ASSEMBLY_URL_END,
+		                    "sai");
 		
 		/**
 		 * User name, registered on PDF Signer Server
 		 */
 		String ORIGINATOR_ID = IWMainApplication.getDefaultIWMainApplication()
-		        .getSettings().getProperty(PROP_ADSS_SERVER_ORIGINATOR_ID,
-		            "idega");
+		        .getSettings().getProperty(
+		            AscertiaConstants.PROP_ADSS_SERVER_ORIGINATOR_ID, "idega");
 		/*
 		 * Input stream that reads the PKCS#7 bytes, that has been
 		 * calculated by GoSign applet
 		 */
-
 		InputStream obj_inputStream = request.getInputStream();
 		ByteArrayOutputStream obj_bos = new ByteArrayOutputStream();
 		byte[] byte_buffer = new byte[128];
@@ -575,165 +558,18 @@ public class AscertiaServlet extends HttpServlet {
 		        .send(ASSEMBLY_URL);
 	}
 	
-	protected void saveSignedPDFAttachment(HttpSession session,
-	        BinaryVariable binaryVariable, long taskInstanceId,
-	        Integer binaryVariableHash, byte[] signedPDF, String localizedPrefix) throws Exception {
-		
-		TaskInstanceW taskInstance = getBpmFactory()
-		        .getProcessManagerByTaskInstanceId(taskInstanceId)
-		        .getTaskInstance(taskInstanceId);
-		
-		String fileName = binaryVariable.getFileName().replace(".pdf",
-		    "_signed.pdf");
-		InputStream inputStream = new ByteArrayInputStream(signedPDF);
-		
-		try {
-			String description;
-			if (localizedPrefix != null) {
-				description = localizedPrefix;
-			} else {
-				description = "Signed";
-			}
-			description += " "
-			        + (StringUtil.isEmpty(binaryVariable.getDescription()) ? binaryVariable
-			                .getFileName()
-			                : binaryVariable.getDescription());
-			
-			BinaryVariable signedBinaryVariable = taskInstance.addAttachment(
-			    binaryVariable.getVariable(), fileName, description,
-			    inputStream);
-			
-			signedBinaryVariable.setSigned(true);
-			signedBinaryVariable.update();
-			
-			binaryVariable.setHidden(true);
-			binaryVariable.update();
-			
-			VariablesHandler variablesHandler = getVariablesHandler();
-			
-			inputStream = variablesHandler.getBinaryVariablesHandler()
-			        .getBinaryVariableContent(signedBinaryVariable);
-			
-			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			byte buffer[] = new byte[1024];
-			int noRead = 0;
-			try {
-				noRead = inputStream.read(buffer, 0, 1024);
-				while (noRead != -1) {
-					baos.write(buffer, 0, noRead);
-					noRead = inputStream.read(buffer, 0, 1024);
-				}
-			} catch (IOException e) {
-				logger.log(Level.SEVERE, "Unable to read from input stream", e);
-				inputStream = null;
-				return;
-			}
-			
-			AscertiaData data = new AscertiaData();
-			data.setDocumentName(fileName);
-			data.setByteDocument(baos.toByteArray());
-			
-			session.setAttribute(AscertiaConstants.PARAM_ASCERTIA_DATA, data);
-			
-		} catch (Exception e) {
-			logger.log(Level.SEVERE,
-			    "Unable to set binary variable with signed document for task instance: "
-			            + taskInstanceId, e);
-			throw new Exception(e);
-			
-		}
-		
-	}
-	
-	protected void saveSignedPDFAsNewVariable(HttpSession session,
-	        long taskInstanceId, byte[] signedPDF, String fileName)
-	        throws Exception {
-		
-		TaskInstanceW taskInstance = getBpmFactory()
-		        .getProcessManagerByTaskInstanceId(taskInstanceId)
-		        .getTaskInstance(taskInstanceId);
-		
-		InputStream inputStream = new ByteArrayInputStream(signedPDF);
-		
-		try {
-			
-			Variable variable = Variable
-			        .parseDefaultStringRepresentation(AscertiaConstants.SIGNED_VARIABLE_NAME);
-			
-			BinaryVariable signedBinaryVariable = taskInstance.addAttachment(
-			    variable, fileName, fileName, inputStream);
-			
-			signedBinaryVariable.setSigned(true);
-			signedBinaryVariable.update();
-			
-			VariablesHandler variablesHandler = getVariablesHandler();
-			
-			inputStream = variablesHandler.getBinaryVariablesHandler()
-			        .getBinaryVariableContent(signedBinaryVariable);
-			
-			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			byte buffer[] = new byte[1024];
-			int noRead = 0;
-			try {
-				noRead = inputStream.read(buffer, 0, 1024);
-				while (noRead != -1) {
-					baos.write(buffer, 0, noRead);
-					noRead = inputStream.read(buffer, 0, 1024);
-				}
-			} catch (IOException e) {
-				logger.log(Level.SEVERE, "Unable to read from input stream", e);
-				inputStream = null;
-				return;
-			}
-			
-			ViewSubmission viewSubmission = getBpmFactory().getViewSubmission();
-			viewSubmission.setTaskInstanceId(taskInstance.getTaskInstanceId());
-			taskInstance.submit(viewSubmission);
-			
-			AscertiaData data = new AscertiaData();
-			data.setDocumentName(fileName);
-			data.setByteDocument(baos.toByteArray());
-			
-			session.setAttribute(AscertiaConstants.PARAM_ASCERTIA_DATA, data);
-			
-		} catch (Exception e) {
-			logger.log(Level.SEVERE,
-			    "Unable to set binary variable with signed document for task instance: "
-			            + taskInstanceId, e);
-			throw new Exception(e);
-			
-		}
-		
-	}
-	
-	private BinaryVariable getBinVar(VariablesHandler variablesHandler,
-	        long taskInstanceId, Integer binaryVariableHash) {
-		
-		List<BinaryVariable> variables = variablesHandler
-		        .resolveBinaryVariables(taskInstanceId);
-		
-		for (BinaryVariable binaryVariable : variables) {
-			
-			if (binaryVariable.getHash().equals(binaryVariableHash)) {
-				
-				return binaryVariable;
-			}
-		}
-		
-		return null;
-	}
-	
-	private VariablesHandler getVariablesHandler() {
-		if (variablesHandler == null) {
-			ELUtil.getInstance().autowire(this);
-		}
-		return variablesHandler;
-	}
-	
 	private IWSlideService getIWSlideService() throws IBOLookupException {
 		return (IWSlideService) IBOLookup.getServiceInstance(IWMainApplication
 		        .getDefaultIWMainApplication().getIWApplicationContext(),
 		    IWSlideService.class);
+	}
+	
+	public BPMHelper getBpmHelper() {
+		return bpmHelper;
+	}
+	
+	public void setBpmHelper(BPMHelper bpmHelper) {
+		this.bpmHelper = bpmHelper;
 	}
 	
 }

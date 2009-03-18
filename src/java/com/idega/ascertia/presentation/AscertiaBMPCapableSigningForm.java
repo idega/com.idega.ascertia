@@ -33,8 +33,9 @@ import com.idega.presentation.ui.IFrame;
 import com.idega.util.CoreConstants;
 import com.idega.util.expression.ELUtil;
 
-public class AscertiaBMPCapableSigningForm extends IWBaseComponent implements BPMCapableJSFComponent {
-
+public class AscertiaBMPCapableSigningForm extends IWBaseComponent implements
+        BPMCapableJSFComponent {
+	
 	private static final String SINGNING_FRAME = "signing_frame";
 	
 	private JSFComponentView view;
@@ -57,17 +58,17 @@ public class AscertiaBMPCapableSigningForm extends IWBaseComponent implements BP
 		
 	}
 	
-	
-	protected void initializeJSFView(FacesContext context){
-		IWApplicationContext iwac = IWMainApplication.getIWMainApplication(context).getIWApplicationContext();
+	protected void initializeJSFView(FacesContext context) {
+		IWApplicationContext iwac = IWMainApplication.getIWMainApplication(
+		    context).getIWApplicationContext();
 		
 		Layer div = new Layer();
 		div.setWidth("100%");
 		div.setHeight("800");
 		BuilderService builderService = null;
-		try{
+		try {
 			builderService = BuilderServiceFactory.getBuilderService(iwac);
-		}catch (Exception e) {
+		} catch (Exception e) {
 			// TODO: handle exception
 			
 			e.printStackTrace();
@@ -77,45 +78,71 @@ public class AscertiaBMPCapableSigningForm extends IWBaseComponent implements BP
 		
 		String pathToSigner = null;
 		IWContext iwc = IWContext.getIWContext(context);
-		if(view.isSubmitable()){	
+		if (view.isSubmitable()) {
 			
-		String serverURL = iwc.getServerURL();
-		serverURL = (serverURL.endsWith("/")) ? serverURL.substring(0, serverURL.length() - 1) : serverURL;
-		
-		String pathToDocument = serverURL +  CoreConstants.WEBDAV_SERVLET_URI + CoreConstants.SLASH + IWMainApplication.getDefaultIWMainApplication().getSettings()
-			.getProperty(AscertiaConstants.APP_PROP_PATH_TO_DOCUMENT_TO_SIGN,"/rulling/");
-		
-		Locale currentLocale = IWContext.getIWContext(context).getCurrentLocale();
-		pathToDocument += IWMainApplication.getDefaultIWMainApplication().getSettings()
-			.getProperty(AscertiaConstants.APP_PROP_DOCUMENT_NAME,"rulling_aggrement");
-		pathToDocument += "_" + currentLocale.getLanguage() + ".pdf";
-		
-		
-		
-		pathToSigner = builderService.getUriToObject(AscertiaBPMSigner.class,
-			Arrays.asList(new AdvancedProperty[] {
-					new AdvancedProperty(
-							AscertiaConstants.UNSIGNED_DOCUMENT_URL, pathToDocument),
-					new AdvancedProperty(
-							AscertiaConstants.PARAM_TASK_ID, String.valueOf(view.getTaskInstanceId()))}));
-		
-		
-		IFrame frame = new IFrame(SINGNING_FRAME, pathToSigner);
-		frame.setWidth("100%");
-		frame.setHeight("100%");
-		
-		div.add(frame);
-		
-		}else{
-			TaskInstanceW taskInstanceW = getBpmFactory().getProcessManagerByTaskInstanceId(view.getTaskInstanceId()).getTaskInstance(view.getTaskInstanceId());
+			String serverURL = iwc.getServerURL();
+			serverURL = (serverURL.endsWith("/")) ? serverURL.substring(0,
+			    serverURL.length() - 1) : serverURL;
 			
-			Variable signedVar = Variable.parseDefaultStringRepresentation(AscertiaConstants.SIGNED_VARIABLE_NAME);
+			String pathToDocument = serverURL
+			        + CoreConstants.WEBDAV_SERVLET_URI
+			        + CoreConstants.SLASH
+			        + IWMainApplication
+			                .getDefaultIWMainApplication()
+			                .getSettings()
+			                .getProperty(
+			                    AscertiaConstants.APP_PROP_PATH_TO_DOCUMENT_TO_SIGN,
+			                    "/rulling/");
 			
-			BinaryVariable signedDocument = taskInstanceW.getAttachment(signedVar);
+			Locale currentLocale = IWContext.getIWContext(context)
+			        .getCurrentLocale();
+			pathToDocument += IWMainApplication.getDefaultIWMainApplication()
+			        .getSettings().getProperty(
+			            AscertiaConstants.APP_PROP_DOCUMENT_NAME,
+			            "rulling_aggrement");
+			pathToDocument += "_" + currentLocale.getLanguage() + ".pdf";
+			
+			pathToSigner = builderService
+			        .getUriToObject(
+			            AscertiaBPMSigner.class,
+			            Arrays
+			                    .asList(new AdvancedProperty[] {
+			                            new AdvancedProperty(
+			                                    AscertiaConstants.UNSIGNED_DOCUMENT_URL,
+			                                    pathToDocument),
+			                            new AdvancedProperty(
+			                                    AscertiaConstants.PARAM_TASK_ID,
+			                                    String.valueOf(view
+			                                            .getTaskInstanceId())),
+			                            new AdvancedProperty(
+			                                    AscertiaConstants.PARAM_SIGNATURE_PROFILE_TO_USE,
+			                                    AscertiaConstants.PROP_EMPTY_ONE_SIGNATURE_PROFILE),
+			                            new AdvancedProperty(
+			                                    AscertiaConstants.PARAM_SELECTED_SIGNATURE_PLACE,
+			                                    AscertiaConstants.PROP_ONE_SIGNATURE_PROFILE_PLACE) }));
+			
+			IFrame frame = new IFrame(SINGNING_FRAME, pathToSigner);
+			frame.setWidth("100%");
+			frame.setHeight("100%");
+			
+			div.add(frame);
+			
+		} else {
+			TaskInstanceW taskInstanceW = getBpmFactory()
+			        .getProcessManagerByTaskInstanceId(view.getTaskInstanceId())
+			        .getTaskInstance(view.getTaskInstanceId());
+			
+			Variable signedVar = Variable
+			        .parseDefaultStringRepresentation(AscertiaConstants.SIGNED_VARIABLE_NAME);
+			
+			BinaryVariable signedDocument = taskInstanceW
+			        .getAttachment(signedVar);
 			
 			VariablesHandler variablesHandler = getVariablesHandler();
 			
-			InputStream inputStream = variablesHandler.getBinaryVariablesHandler().getBinaryVariableContent(signedDocument);
+			InputStream inputStream = variablesHandler
+			        .getBinaryVariablesHandler().getBinaryVariableContent(
+			            signedDocument);
 			
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			byte buffer[] = new byte[1024];
@@ -134,10 +161,15 @@ public class AscertiaBMPCapableSigningForm extends IWBaseComponent implements BP
 			data.setDocumentName(signedDocument.getFileName());
 			data.setByteDocument(baos.toByteArray());
 			
-			
-			
-			iwc.getSession().setAttribute(AscertiaConstants.PARAM_ASCERTIA_DATA, data);
-			IFrame frame = new IFrame("signedDocument", iwc.getIWMainApplication().getMediaServletURI() + "?" + MediaWritable.PRM_WRITABLE_CLASS + "="+ IWMainApplication.getEncryptedClassName(AscertiaPDFPrinter.class));
+			iwc.getSession().setAttribute(
+			    AscertiaConstants.PARAM_ASCERTIA_DATA, data);
+			IFrame frame = new IFrame("signedDocument", iwc
+			        .getIWMainApplication().getMediaServletURI()
+			        + "?"
+			        + MediaWritable.PRM_WRITABLE_CLASS
+			        + "="
+			        + IWMainApplication
+			                .getEncryptedClassName(AscertiaPDFPrinter.class));
 			frame.setWidth("100%");
 			frame.setHeight("100%");
 			div.add(frame);
@@ -147,20 +179,23 @@ public class AscertiaBMPCapableSigningForm extends IWBaseComponent implements BP
 	
 	public String getDefaultDisplayName() {
 		
-		return IWMainApplication.getDefaultIWMainApplication().getLocalisedStringMessage("sign_document", "Sign document", "com.idega.ascertia");
+		return IWMainApplication.getDefaultIWMainApplication()
+		        .getLocalisedStringMessage("sign_document", "Sign document",
+		            "com.idega.ascertia");
 		
 	}
-
+	
 	public String getDisplayName(Locale locale) {
-		return IWMainApplication.getDefaultIWMainApplication().getLocalisedStringMessage("sign_document", "Sign document", "com.idega.ascertia",locale);
+		return IWMainApplication.getDefaultIWMainApplication()
+		        .getLocalisedStringMessage("sign_document", "Sign document",
+		            "com.idega.ascertia", locale);
 	}
-
+	
 	public void setView(JSFComponentView view) {
 		this.view = view;
 		
 	}
-
-
+	
 	@Override
 	public Object saveState(FacesContext ctx) {
 		Object values[] = new Object[4];
@@ -173,29 +208,29 @@ public class AscertiaBMPCapableSigningForm extends IWBaseComponent implements BP
 	public void restoreState(FacesContext ctx, Object state) {
 		Object values[] = (Object[]) state;
 		super.restoreState(ctx, values[0]);
-		this.view = (JSFComponentView)values[1];
+		this.view = (JSFComponentView) values[1];
 	}
-
+	
 	public VariablesHandler getVariablesHandler() {
-		if(variablesHandler == null){
+		if (variablesHandler == null) {
 			ELUtil.getInstance().autowire(this);
 		}
 		return variablesHandler;
 	}
-
+	
 	public void setVariablesHandler(VariablesHandler variablesHandler) {
 		this.variablesHandler = variablesHandler;
 	}
-
+	
 	public BPMFactory getBpmFactory() {
-		if(bpmFactory == null){
+		if (bpmFactory == null) {
 			ELUtil.getInstance().autowire(this);
 		}
 		return bpmFactory;
 	}
-
+	
 	public void setBpmFactory(BPMFactory bpmFactory) {
 		this.bpmFactory = bpmFactory;
 	}
-
+	
 }

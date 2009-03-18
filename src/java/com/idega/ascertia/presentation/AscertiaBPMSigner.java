@@ -300,7 +300,7 @@ public class AscertiaBPMSigner extends Block {
 		
 		addCertificatesList(form);
 		Link sign = new Link(
-		        /*getLocalizedString("sign_document", "Sign document", iwc)*/"Sign document");
+		        getLocalizedString("sign_document", "Sign document", iwc));
 		sign.setURL("javascript:void(0)");
 		sign
 		        .setOnClick("signDocument('"
@@ -308,7 +308,7 @@ public class AscertiaBPMSigner extends Block {
 		                + "','"
 		                + errorPath
 		                + "','"
-		                + /*getLocalizedString("signing", "Signing...", iwc)*/"Signing..."
+		                + getLocalizedString("signing", "Signing...", iwc)
 		                + "');");
 		form.add(sign);
 	}

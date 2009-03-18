@@ -1,6 +1,7 @@
 package com.idega.ascertia;
 
 
+//TODO: remove input stream, put variable hash and task instance id, so the servlets could resolve it
 public class AscertiaData {
 
 	private String documentName;	

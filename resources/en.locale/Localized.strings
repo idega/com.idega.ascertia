@@ -5,3 +5,6 @@ signing=Signing...
 download=Download
 see_attachement=See attachment for signed document
 note_message=<strong>NOTE:</strong> Java Runtime Environment (JRE) version 6.0 (or latest) is needed to run the Ascertia GoSign applet. If the applet does not load properly please get the correct Java plug-in from <a href=\"http://www.java.com/en/download/\"><font color=\"#0000FF\">here.</font></a>
+sign_two_signature_profile_left=Left
+sign_two_signature_profile_right=Right
+sign_signature_profile=Signature Place
