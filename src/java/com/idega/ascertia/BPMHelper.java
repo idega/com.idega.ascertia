@@ -79,9 +79,10 @@ public class BPMHelper {
 			BinaryVariable signedBinaryVariable = taskInstance.addAttachment(
 			    binaryVariable.getVariable(), fileName, description,
 			    inputStream);
+			signedBinaryVariable.setMetadata(binaryVariable.getMetadata());
 			
 			signedBinaryVariable.getMetadata().put(
-			    AscertiaConstants.PARAM_ADD_EMPTY_SIGNATURES, "false");
+			    AscertiaConstants.PARAM_ADD_EMPTY_SIGNATURES, Boolean.FALSE.toString());
 			
 			@SuppressWarnings("unchecked")
 			List<String> signaturePlacesUsed = signedBinaryVariable
@@ -91,7 +92,7 @@ public class BPMHelper {
 			            AscertiaConstants.PARAM_SIGNATURE_PLACES_USED)
 			        : new ArrayList<String>();
 			
-			signaturePlacesUsed.add(signaturePlaceUsed);
+			
 			signedBinaryVariable.getMetadata().put(
 			    AscertiaConstants.PARAM_SIGNATURE_PLACES_USED,
 			    signaturePlacesUsed);
@@ -100,7 +101,9 @@ public class BPMHelper {
 			    AscertiaConstants.PARAM_SIGNATURE_PROFILE_TO_USE,
 			    signatureProfileUsed);
 			
-			signedBinaryVariable.setSigned(true);
+			signaturePlacesUsed.add(signaturePlaceUsed);
+			signedBinaryVariable
+			        .setSigned(canBeSignedAgain(signedBinaryVariable));
 			signedBinaryVariable.update();
 			
 			binaryVariable.setHidden(true);
@@ -180,7 +183,8 @@ public class BPMHelper {
 			    AscertiaConstants.PARAM_SIGNATURE_PROFILE_TO_USE,
 			    signatureProfileUsed);
 			
-			signedBinaryVariable.setSigned(true);
+			signedBinaryVariable
+			        .setSigned(canBeSignedAgain(signedBinaryVariable));
 			signedBinaryVariable.update();
 			
 			VariablesHandler variablesHandler = getVariablesHandler();
@@ -327,7 +331,8 @@ public class BPMHelper {
 			        AscertiaConstants.PARAM_ADD_EMPTY_SIGNATURES));
 			
 		} else {
-			paramsMap.put(AscertiaConstants.PARAM_ADD_EMPTY_SIGNATURES, Boolean.TRUE.toString());
+			paramsMap.put(AscertiaConstants.PARAM_ADD_EMPTY_SIGNATURES,
+			    Boolean.TRUE.toString());
 		}
 		
 		// adding places for signatures
@@ -375,6 +380,34 @@ public class BPMHelper {
 		}
 		
 		return paramsMap;
+	}
+	
+	protected boolean canBeSignedAgain(BinaryVariable binaryVariable) {
+		@SuppressWarnings("unchecked")
+		List<String> signingPlacesUsed = (List<String>) binaryVariable
+		        .getMetadata().get(
+		            AscertiaConstants.PARAM_SIGNATURE_PLACES_USED);
+		
+		if (binaryVariable.getMetadata().get(
+		    AscertiaConstants.PARAM_SIGNATURE_PROFILE_TO_USE) != null
+		        && binaryVariable.getMetadata().get(
+		            AscertiaConstants.PARAM_SIGNATURE_PROFILE_TO_USE).equals(
+		            AscertiaConstants.PROP_EMPTY_TWO_SIGNATURE_PROFILE)) {
+			if (signingPlacesUsed.size() >1) {
+				return true;
+			}
+			
+		} else if (binaryVariable.getMetadata().get(
+		    AscertiaConstants.PARAM_SIGNATURE_PROFILE_TO_USE) != null
+		        && binaryVariable.getMetadata().get(
+		            AscertiaConstants.PARAM_SIGNATURE_PROFILE_TO_USE).equals(
+		            AscertiaConstants.PROP_EMPTY_ONE_SIGNATURE_PROFILE)) {
+			if (signingPlacesUsed.size() >0) {
+				return true;
+			}
+			
+		}
+		return false;
 	}
 	
 	protected VariablesHandler getVariablesHandler() {
