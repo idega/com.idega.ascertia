@@ -29,6 +29,7 @@ import com.idega.presentation.ui.DropdownMenu;
 import com.idega.presentation.ui.Form;
 import com.idega.presentation.ui.HiddenInput;
 import com.idega.presentation.ui.IFrame;
+import com.idega.presentation.ui.SelectOption;
 import com.idega.util.CoreConstants;
 import com.idega.util.PresentationUtil;
 import com.idega.util.expression.ELUtil;
@@ -228,11 +229,19 @@ public class AscertiaSigner extends Block {
 			signaturePlace.addMenuElement(menuElement, getLocalizedString(
 			    menuElement, menuElement, iwc));
 		}
-		if (signaturePlace.getOptions().size()<2){
-			signaturePlace.setDisabled(true);
+		if (signaturePlace.getOptions().size() < 2) {
+			/*signaturePlace.setDisabled(true);
+			signaturePlace.setMarkupAttribute("visibility", "hidden");*/
+			HiddenInput hiddenInput = new HiddenInput();
+			hiddenInput.setID(AscertiaConstants.PARAM_SELECTED_SIGNATURE_PLACE);
+			hiddenInput
+			        .setName(AscertiaConstants.PARAM_SELECTED_SIGNATURE_PLACE);
+			hiddenInput.setValue(((SelectOption) signaturePlace.getOptions()
+			        .iterator().next()).getValueAsString());
+			form.add(hiddenInput);
+		}else{
+			form.add(signaturePlace);
 		}
-		form.add(signaturePlace);
-		
 		DropdownMenu certificates = new DropdownMenu();
 		certificates.setId("GoSignCertificateList");
 		certificates.setName("GoSignCertificateList");
