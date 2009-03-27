@@ -230,8 +230,6 @@ public class AscertiaSigner extends Block {
 			    menuElement, menuElement, iwc));
 		}
 		if (signaturePlace.getOptions().size() < 2) {
-			/*signaturePlace.setDisabled(true);
-			signaturePlace.setMarkupAttribute("visibility", "hidden");*/
 			HiddenInput hiddenInput = new HiddenInput();
 			hiddenInput.setID(AscertiaConstants.PARAM_SELECTED_SIGNATURE_PLACE);
 			hiddenInput
