@@ -190,11 +190,7 @@ public class AscertiaServlet extends HttpServlet {
 					
 				}
 				
-				try {
-					rawPdfFile = addSignaturePage(rawPdfFile, iwc);
-				} catch (Exception e) {
-					// if empty page not found we will put signature on last page...
-				}
+				
 				
 				// Getting empty signature field
 				byte[] pdfFileWithEmptySignature = null;
@@ -203,6 +199,12 @@ public class AscertiaServlet extends HttpServlet {
 				        || !request.getParameter(
 				            AscertiaConstants.PARAM_ADD_EMPTY_SIGNATURES)
 				                .equalsIgnoreCase(Boolean.FALSE.toString())) {
+					
+					try {
+						rawPdfFile = addSignaturePage(rawPdfFile, iwc);
+					} catch (Exception e) {
+						// if empty page not found we will put signature on last page...
+					}
 					EmptySignatureFieldResponse emptySigFieldResponse = getEmtptySignatureField(
 					    rawPdfFile,
 					    request
