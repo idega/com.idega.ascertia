@@ -136,7 +136,7 @@ public class AscertiaBMPCapableSigningForm extends IWBaseComponent implements
 			        .parseDefaultStringRepresentation(AscertiaConstants.SIGNED_VARIABLE_NAME);
 			
 			BinaryVariable signedDocument = taskInstanceW
-			        .getAttachment(signedVar);
+			        .getAttachments(signedVar).iterator().next();
 			
 			VariablesHandler variablesHandler = getVariablesHandler();
 			
