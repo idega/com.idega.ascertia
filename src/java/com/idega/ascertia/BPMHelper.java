@@ -22,6 +22,7 @@ import com.idega.jbpm.exe.TaskInstanceW;
 import com.idega.jbpm.variables.BinaryVariable;
 import com.idega.jbpm.variables.VariablesHandler;
 import com.idega.jbpm.view.ViewSubmission;
+import com.idega.presentation.IWContext;
 import com.idega.util.StringUtil;
 
 /**
@@ -82,7 +83,8 @@ public class BPMHelper {
 			signedBinaryVariable.setMetadata(binaryVariable.getMetadata());
 			
 			signedBinaryVariable.getMetadata().put(
-			    AscertiaConstants.PARAM_ADD_EMPTY_SIGNATURES, Boolean.FALSE.toString());
+			    AscertiaConstants.PARAM_ADD_EMPTY_SIGNATURES,
+			    Boolean.FALSE.toString());
 			
 			@SuppressWarnings("unchecked")
 			List<String> signaturePlacesUsed = signedBinaryVariable
@@ -91,7 +93,6 @@ public class BPMHelper {
 			        .getMetadata().get(
 			            AscertiaConstants.PARAM_SIGNATURE_PLACES_USED)
 			        : new ArrayList<String>();
-			
 			
 			signedBinaryVariable.getMetadata().put(
 			    AscertiaConstants.PARAM_SIGNATURE_PLACES_USED,
@@ -275,7 +276,10 @@ public class BPMHelper {
 		
 		String variableHashString = getFormConverterToPDF()
 		        .getHashValueForGeneratedPDFFromXForm(
-		            String.valueOf(taskInstanceId), true);
+		            String.valueOf(taskInstanceId),
+		            true,
+		            getBpmFactory().getTaskInstanceW(taskInstanceId).getName(
+		                IWContext.getCurrentInstance().getCurrentLocale()));
 		
 		Integer binaryVariableHash = Integer.valueOf(variableHashString);
 		
@@ -393,7 +397,7 @@ public class BPMHelper {
 		        && binaryVariable.getMetadata().get(
 		            AscertiaConstants.PARAM_SIGNATURE_PROFILE_TO_USE).equals(
 		            AscertiaConstants.PROP_EMPTY_TWO_SIGNATURE_PROFILE)) {
-			if (signingPlacesUsed.size() >1) {
+			if (signingPlacesUsed.size() > 1) {
 				return true;
 			}
 			
@@ -402,7 +406,7 @@ public class BPMHelper {
 		        && binaryVariable.getMetadata().get(
 		            AscertiaConstants.PARAM_SIGNATURE_PROFILE_TO_USE).equals(
 		            AscertiaConstants.PROP_EMPTY_ONE_SIGNATURE_PROFILE)) {
-			if (signingPlacesUsed.size() >0) {
+			if (signingPlacesUsed.size() > 0) {
 				return true;
 			}
 			
