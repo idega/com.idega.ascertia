@@ -56,6 +56,7 @@ public class AscertiaServlet extends HttpServlet {
 	
 	// Initialize global variables
 	
+	@Override
 	public void init(ServletConfig a_objServletConfig) throws ServletException {
 		
 		ELUtil.getInstance().autowire(this);
@@ -65,6 +66,7 @@ public class AscertiaServlet extends HttpServlet {
 	
 	// Process the HTTP Get request
 	
+	@Override
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
 	        throws ServletException, IOException {
 		
@@ -77,6 +79,7 @@ public class AscertiaServlet extends HttpServlet {
 	
 	// Process the HTTP Post request
 	
+	@Override
 	public void doPost(HttpServletRequest request, HttpServletResponse response)
 	        throws ServletException, IOException {
 		IWContext iwc = null;
@@ -561,9 +564,7 @@ public class AscertiaServlet extends HttpServlet {
 	}
 	
 	private IWSlideService getIWSlideService() throws IBOLookupException {
-		return (IWSlideService) IBOLookup.getServiceInstance(IWMainApplication
-		        .getDefaultIWMainApplication().getIWApplicationContext(),
-		    IWSlideService.class);
+		return IBOLookup.getServiceInstance(IWMainApplication.getDefaultIWMainApplication().getIWApplicationContext(), IWSlideService.class);
 	}
 	
 	public BPMHelper getBpmHelper() {
