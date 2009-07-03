@@ -255,7 +255,6 @@ public class AscertiaSigner extends Block {
 		
 		List<AdvancedProperty> paramList = new ArrayList<AdvancedProperty>();
 		
-		@SuppressWarnings("unchecked")
 		Enumeration<String> paramNames = iwc.getParameterNames();
 		
 		addSigningOptions(form, iwc);

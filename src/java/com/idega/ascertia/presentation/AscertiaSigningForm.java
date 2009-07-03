@@ -26,7 +26,6 @@ public class AscertiaSigningForm extends Block {
 		        .getBuilderService(iwc);
 		
 		List<AdvancedProperty> paramList = new ArrayList<AdvancedProperty>();
-		@SuppressWarnings("unchecked")
 		Enumeration<String> paramNames = iwc.getParameterNames();
 		while (paramNames.hasMoreElements()) {
 			String paramName = paramNames.nextElement();

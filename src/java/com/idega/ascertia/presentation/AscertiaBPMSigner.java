@@ -157,7 +157,6 @@ public class AscertiaBPMSigner extends Block {
 		mainDiv.add(documentFrame);
 		
 		Map<String, String> formParams = new HashMap<String, String>();
-		@SuppressWarnings("unchecked")
 		Enumeration<String> paramNames = iwc.getParameterNames();
 		while (paramNames.hasMoreElements()) {
 			String paramName = paramNames.nextElement();
