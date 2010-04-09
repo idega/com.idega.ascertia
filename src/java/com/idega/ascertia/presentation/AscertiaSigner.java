@@ -63,6 +63,7 @@ public class AscertiaSigner extends Block {
 		super();
 	}
 	
+	@Override
 	public void main(IWContext iwc) throws RemoteException {
 		
 		web2 = ELUtil.getInstance().getBean(Web2Business.class);
@@ -213,17 +214,12 @@ public class AscertiaSigner extends Block {
 	}
 	
 	private void addSigningOptions(Form form, IWContext iwc) {
-		
-		String avalableSignaturePlaces = iwc
-		        .getParameter(AscertiaConstants.PARAM_SIGNATURE_PLACES_USED);
+		String avalableSignaturePlaces = iwc.getParameter(AscertiaConstants.PARAM_SIGNATURE_PLACES_USED);
 		DropdownMenu signaturePlace = new DropdownMenu();
 		signaturePlace.setId(AscertiaConstants.PARAM_SELECTED_SIGNATURE_PLACE);
-		signaturePlace
-		        .setName(AscertiaConstants.PARAM_SELECTED_SIGNATURE_PLACE);
+		signaturePlace.setName(AscertiaConstants.PARAM_SELECTED_SIGNATURE_PLACE);
 		
-		StringTokenizer stringTokenizer = new StringTokenizer(
-		        avalableSignaturePlaces, ";");
-		
+		StringTokenizer stringTokenizer = new StringTokenizer(avalableSignaturePlaces == null ? CoreConstants.EMPTY : avalableSignaturePlaces, ";");
 		while (stringTokenizer.hasMoreElements()) {
 			String menuElement = stringTokenizer.nextToken();
 			signaturePlace.addMenuElement(menuElement, getLocalizedString(
@@ -246,6 +242,7 @@ public class AscertiaSigner extends Block {
 		form.add(certificates);
 	}
 	
+	@Override
 	public String getBundleIdentifier() {
 		return IW_BUNDLE_IDENTIFIER;
 	}
