@@ -10,17 +10,9 @@
 	<packaging>jar</packaging>
 	<groupId>com.idega.block.addon</groupId>
 	<artifactId>com.idega.ascertia</artifactId>
-	<version>5.0.0-SNAPSHOT</version>
 	<inceptionYear>2008</inceptionYear>
 	<description>IdegaWeb integration of Ascertia Digital Signing Service</description>
-	<scm>
-		<!--
-			<connection>scm:cvs:ext:${user.name}@code.idega.com:/idega/cvs:${groupId}/${artifactId}/</connection>
-			<developerConnection>scm:cvs:ext:${user.name}@code.idega.com:/idega/cvs:${groupId}/${artifactId}/</developerConnection>
-		-->
-		<connection>scm:cvs:ext:eiki@code.idega.com:/idega/cvs:com.idega.block.egov/com.idega.ascertia/</connection>
-		<developerConnection>scm:cvs:ext:eiki@code.idega.com:/idega/cvs:com.idega.block.egov/com.idega.ascertia/</developerConnection>
-  </scm>
+	
 	<developers>
 		<developer>
 			<name>Eirikur Sveinn Hrafnsson</name>
@@ -110,9 +102,9 @@
     	</dependency>
 		 
 		<dependency>
-			<groupId>jdom</groupId>
+			<groupId>org.jdom</groupId>
 			<artifactId>jdom</artifactId>
-			<version>${jdom-jdom-version}</version>
+			<version>${org.jdom-jdom-version}</version>
 			<type>jar</type>
 		</dependency>
 		<dependency>
