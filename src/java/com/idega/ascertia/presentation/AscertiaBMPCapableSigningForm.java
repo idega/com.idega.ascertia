@@ -180,14 +180,14 @@ public class AscertiaBMPCapableSigningForm extends IWBaseComponent implements
 	public String getDefaultDisplayName() {
 		
 		return IWMainApplication.getDefaultIWMainApplication()
-		        .getLocalisedStringMessage("sign_document", "Sign document",
+		        .getLocalizedStringMessage("sign_document", "Sign document",
 		            "com.idega.ascertia");
 		
 	}
 	
 	public String getDisplayName(Locale locale) {
 		return IWMainApplication.getDefaultIWMainApplication()
-		        .getLocalisedStringMessage("sign_document", "Sign document",
+		        .getLocalizedStringMessage("sign_document", "Sign document",
 		            "com.idega.ascertia", locale);
 	}
 	
