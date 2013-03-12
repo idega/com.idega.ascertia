@@ -12,6 +12,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +24,8 @@ import com.idega.jbpm.variables.BinaryVariable;
 import com.idega.jbpm.variables.VariablesHandler;
 import com.idega.jbpm.view.ViewSubmission;
 import com.idega.presentation.IWContext;
+import com.idega.util.FileUtil;
+import com.idega.util.IOUtil;
 import com.idega.util.StringUtil;
 
 /**
@@ -31,7 +34,7 @@ import com.idega.util.StringUtil;
  * @author juozas
  */
 @Service
-@Scope("singleton")
+@Scope(BeanDefinition.SCOPE_SINGLETON)
 public class BPMHelper {
 	
 	private Logger logger = Logger.getLogger(BPMHelper.class.getName());
@@ -112,20 +115,27 @@ public class BPMHelper {
 			
 			VariablesHandler variablesHandler = getVariablesHandler();
 			
-			inputStream = variablesHandler.getBinaryVariablesHandler()
-			        .getBinaryVariableContent(signedBinaryVariable);
-			
+			inputStream = variablesHandler.getBinaryVariablesHandler().getBinaryVariableContent(signedBinaryVariable);
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			byte buffer[] = new byte[1024];
-			int noRead = 0;
+//			byte buffer[] = new byte[1024];
+//			int noRead = 0;
+//			try {
+//				noRead = inputStream.read(buffer, 0, 1024);
+//				while (noRead != -1) {
+//					baos.write(buffer, 0, noRead);
+//					noRead = inputStream.read(buffer, 0, 1024);
+//				}
+//			} catch (IOException e) {
+//				logger.log(Level.SEVERE, "Unable to read from input stream", e);
+//				inputStream = null;
+//				return null;
+//			}
 			try {
-				noRead = inputStream.read(buffer, 0, 1024);
-				while (noRead != -1) {
-					baos.write(buffer, 0, noRead);
-					noRead = inputStream.read(buffer, 0, 1024);
-				}
+				FileUtil.streamToOutputStream(inputStream, baos);
 			} catch (IOException e) {
 				logger.log(Level.SEVERE, "Unable to read from input stream", e);
+				IOUtil.close(inputStream);
+				IOUtil.close(baos);
 				inputStream = null;
 				return null;
 			}
@@ -137,13 +147,9 @@ public class BPMHelper {
 			return data;
 			
 		} catch (Exception e) {
-			logger.log(Level.SEVERE,
-			    "Unable to set binary variable with signed document for task instance: "
-			            + taskInstanceId, e);
+			logger.log(Level.SEVERE, "Unable to set binary variable with signed document for task instance: " + taskInstanceId, e);
 			throw new Exception(e);
-			
 		}
-		
 	}
 	
 	AscertiaData saveSignedPDFAsNewVariable(long taskInstanceId,
@@ -190,20 +196,21 @@ public class BPMHelper {
 			
 			VariablesHandler variablesHandler = getVariablesHandler();
 			
-			inputStream = variablesHandler.getBinaryVariablesHandler()
-			        .getBinaryVariableContent(signedBinaryVariable);
-			
+			inputStream = variablesHandler.getBinaryVariablesHandler().getBinaryVariableContent(signedBinaryVariable);
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			byte buffer[] = new byte[1024];
-			int noRead = 0;
+//			byte buffer[] = new byte[1024];
+//			int noRead = 0;
 			try {
-				noRead = inputStream.read(buffer, 0, 1024);
-				while (noRead != -1) {
-					baos.write(buffer, 0, noRead);
-					noRead = inputStream.read(buffer, 0, 1024);
-				}
+				FileUtil.streamToOutputStream(inputStream, baos);
+//				noRead = inputStream.read(buffer, 0, 1024);
+//				while (noRead != -1) {
+//					baos.write(buffer, 0, noRead);
+//					noRead = inputStream.read(buffer, 0, 1024);
+//				}
 			} catch (IOException e) {
 				logger.log(Level.SEVERE, "Unable to read from input stream", e);
+				IOUtil.close(inputStream);
+				IOUtil.close(baos);
 				inputStream = null;
 				return null;
 			}
@@ -228,24 +235,21 @@ public class BPMHelper {
 		
 	}
 	
-	byte[] getDocumentInputStream(Integer variableHash, Long taskInstanceId)
-	        throws IOException {
-		
-		BinaryVariable binaryVariable = getBinaryVariable(taskInstanceId,
-		    variableHash);
+	byte[] getDocumentInputStream(Integer variableHash, Long taskInstanceId) throws IOException {
+		BinaryVariable binaryVariable = getBinaryVariable(taskInstanceId, variableHash);
 		InputStream inputStream = getVariablesHandler()
 		        .getBinaryVariablesHandler().getBinaryVariableContent(
 		            binaryVariable);
-		
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		byte buffer[] = new byte[1024];
-		int noRead = 0;
-		noRead = inputStream.read(buffer, 0, 1024);
-		// Write out the stream to the file
-		while (noRead != -1) {
-			baos.write(buffer, 0, noRead);
-			noRead = inputStream.read(buffer, 0, 1024);
-		}
+		FileUtil.streamToOutputStream(inputStream, baos);
+//		byte buffer[] = new byte[1024];
+//		int noRead = 0;
+//		noRead = inputStream.read(buffer, 0, 1024);
+//		// Write out the stream to the file
+//		while (noRead != -1) {
+//			baos.write(buffer, 0, noRead);
+//			noRead = inputStream.read(buffer, 0, 1024);
+//		}
 		return baos.toByteArray();
 	}
 	

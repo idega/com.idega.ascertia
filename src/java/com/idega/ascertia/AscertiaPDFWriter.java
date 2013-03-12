@@ -21,18 +21,15 @@ public class AscertiaPDFWriter extends DownloadWriter{
 	
 	private InputStream inputStream;
 		
-
-
 	@Override
 	public void init(HttpServletRequest req, IWContext iwc) {
-		AscertiaData ascertiaData = (AscertiaData)iwc.getSession().getAttribute(AscertiaConstants.PARAM_ASCERTIA_DATA);
-
+		AscertiaData ascertiaData = (AscertiaData) iwc.getSession().getAttribute(AscertiaConstants.PARAM_ASCERTIA_DATA);
+		
 		byte[] document = ascertiaData.getByteDocument();
-				
 		ByteArrayInputStream bais = new ByteArrayInputStream(document);	
 		this.inputStream = bais;
 		
-		setAsDownload(iwc, ascertiaData.getDocumentName(), bais.available());
+		setAsDownload(iwc, ascertiaData.getDocumentName(), document.length);
 	}
 	
 	@Override
@@ -47,6 +44,4 @@ public class AscertiaPDFWriter extends DownloadWriter{
 		streamOut.flush();
 		streamOut.close();
 	}
-	
-	
 }

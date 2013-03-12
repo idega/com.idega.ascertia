@@ -20,7 +20,6 @@ import com.idega.io.MediaWritable;
 import com.idega.presentation.Block;
 import com.idega.presentation.IWContext;
 import com.idega.presentation.Layer;
-import com.idega.presentation.Script;
 import com.idega.presentation.text.DownloadLink;
 import com.idega.presentation.text.Heading5;
 import com.idega.presentation.text.Link;
@@ -31,11 +30,12 @@ import com.idega.presentation.ui.HiddenInput;
 import com.idega.presentation.ui.IFrame;
 import com.idega.presentation.ui.SelectOption;
 import com.idega.util.CoreConstants;
+import com.idega.util.CoreUtil;
 import com.idega.util.ListUtil;
 import com.idega.util.PresentationUtil;
+import com.idega.util.StringUtil;
+import com.idega.util.URIUtil;
 import com.idega.util.expression.ELUtil;
-
-//TODO: refactoring, localization, styleclasses etc...
 
 /**
  * A Block for signing documents (pdf) See <a href="http://www.ascertia.com">www.ascertia.com</a>
@@ -66,12 +66,10 @@ public class AscertiaSigner extends Block {
 	
 	@Override
 	public void main(IWContext iwc) throws RemoteException {
-		
 		web2 = ELUtil.getInstance().getBean(Web2Business.class);
 		bundle = this.getBundle(iwc);
-		goSignRootRootURI = bundle
-		        .getVirtualPathWithFileNameString("javascript/GoSign");
-		goSignJSFile = goSignRootRootURI + "/lib/gosign.js";
+		goSignRootRootURI = bundle.getVirtualPathWithFileNameString("javascript/GoSign");
+		goSignJSFile = goSignRootRootURI.concat("/lib/gosign.js");
 		
 		switch (parseAction(iwc)) {
 			case PARAMETER_SHOW_UNSIGNED_PDF:
@@ -82,7 +80,6 @@ public class AscertiaSigner extends Block {
 				showSignedPdf(iwc);
 				break;
 		}
-		
 	}
 	
 	private int parseAction(IWContext iwc) {
@@ -93,30 +90,22 @@ public class AscertiaSigner extends Block {
 	}
 	
 	public void showSigningForm(IWContext iwc) throws RemoteException {
-		
 		String fileName;
 		String serverURL = iwc.getServerURL();
-		serverURL = (serverURL.endsWith("/")) ? serverURL.substring(0,
-		    serverURL.length() - 1) : serverURL;
+		serverURL = (serverURL.endsWith(CoreConstants.SLASH)) ? serverURL.substring(0, serverURL.length() - 1) : serverURL;
 		String documentURL;
-		if (iwc.getParameter(AscertiaConstants.UNSIGNED_DOCUMENT_URL) != null
-		        && !iwc.getParameter(AscertiaConstants.UNSIGNED_DOCUMENT_URL)
-		                .equals("")
+		String unsignedDoc = iwc.getParameter(AscertiaConstants.UNSIGNED_DOCUMENT_URL);
+		if (!StringUtil.isEmpty(unsignedDoc)
 		        // sometimes we get a null string
-		        && !iwc.getParameter(AscertiaConstants.UNSIGNED_DOCUMENT_URL)
-		                .equals("null")) {
+		        && !unsignedDoc.equals("null")) {
 			
-			documentURL = serverURL + CoreConstants.WEBDAV_SERVLET_URI
-			        + CoreConstants.SLASH
-			        + iwc.getParameter(AscertiaConstants.UNSIGNED_DOCUMENT_URL);
-			
+			documentURL = serverURL.concat(CoreConstants.WEBDAV_SERVLET_URI).concat(CoreConstants.SLASH).concat(unsignedDoc);
 			fileName = documentURL;
 			
-			while (fileName.indexOf("/") != -1) {
-				fileName = fileName.substring(fileName.indexOf("/") + 1);
+			while (fileName.indexOf(CoreConstants.SLASH) != -1) {
+				fileName = fileName.substring(fileName.indexOf(CoreConstants.SLASH) + 1);
 			}
-			iwc.setApplicationAttribute(AscertiaConstants.SIGNED_DOCUMENT_URL,
-			    fileName);
+			iwc.setApplicationAttribute(AscertiaConstants.SIGNED_DOCUMENT_URL, fileName);
 			
 		} else {
 			documentURL = null;
@@ -130,50 +119,25 @@ public class AscertiaSigner extends Block {
 			Layer errorDiv = new Layer();
 			errorDiv.add(new Text(iwc.getParameter(PARAMETER_ERROR_REASON)));
 			mainDiv.add(errorDiv);
-			
 		}
-		// Adding js
-		mainDiv.add(PresentationUtil.getJavaScriptSourceLine(iwc
-		        .getIWMainApplication().getBundle(
-		            CoreConstants.CORE_IW_BUNDLE_IDENTIFIER)
-		        .getVirtualPathWithFileNameString("iw_core.js")));
 		
-		mainDiv.add(PresentationUtil.getJavaScriptSourceLine(web2
-		        .getBundleURIToMootoolsLib()));
-		
+		IWBundle coreBundle = CoreUtil.getCoreBundle();
+		// Adding JavaScript
+		mainDiv.add(PresentationUtil.getJavaScriptSourceLine(coreBundle.getVirtualPathWithFileNameString("iw_core.js")));
+		mainDiv.add(PresentationUtil.getJavaScriptSourceLine(web2.getBundleURIToMootoolsLib()));
 		mainDiv.add(PresentationUtil.getJavaScriptSourceLine(goSignJSFile));
+		mainDiv.add(PresentationUtil.getJavaScriptSourceLine(bundle.getVirtualPathWithFileNameString("javascript/AscertiaHelper.js")));
 		
-		mainDiv
-		        .add(PresentationUtil
-		                .getJavaScriptSourceLine(bundle
-		                        .getResourceURIWithoutContextPath("/javascript/AscertiaHelper.js")));
-		
-		mainDiv
-		        .add(PresentationUtil
-		                .getCssLine(
-		                    bundle
-		                            .getResourceURIWithoutContextPath("/style/ascertia.css"),
-		                    true));
-		mainDiv.add(PresentationUtil.getCssLine(iwc.getIWMainApplication()
-		        .getBundle(CoreConstants.CORE_IW_BUNDLE_IDENTIFIER)
-		        .getVirtualPathWithFileNameString("/style/iw_core.css"), true));
+		//	Adding CSS
+		mainDiv.add(PresentationUtil.getStyleSheetSourceLine(bundle.getVirtualPathWithFileNameString("style/ascertia.css")));
+		mainDiv.add(PresentationUtil.getStyleSheetSourceLine(coreBundle.getVirtualPathWithFileNameString("style/iw_core.css")));
 		
 		// Frame for document to be signed
-		IFrame documentFrame = new IFrame("document_view_frame", iwc
-		        .getIWMainApplication().getMediaServletURI()
-		        + "?"
-		        + MediaWritable.PRM_WRITABLE_CLASS
-		        + "="
-		        + IWMainApplication
-		                .getEncryptedClassName(AscertiaPDFPrinter.class)
-		        + "&"
-		        + AscertiaConstants.PARAM_TASK_ID
-		        + "="
-		        + iwc.getParameter(AscertiaConstants.PARAM_TASK_ID)
-		        + "&"
-		        + AscertiaConstants.PARAM_VARIABLE_HASH
-		        + "="
-		        + iwc.getParameter(AscertiaConstants.PARAM_VARIABLE_HASH));
+		URIUtil uri = new URIUtil(iwc.getIWMainApplication().getMediaServletURI());
+		uri.setParameter(MediaWritable.PRM_WRITABLE_CLASS, IWMainApplication.getEncryptedClassName(AscertiaPDFPrinter.class));
+		uri.setParameter(AscertiaConstants.PARAM_TASK_ID, iwc.getParameter(AscertiaConstants.PARAM_TASK_ID));
+		uri.setParameter(AscertiaConstants.PARAM_VARIABLE_HASH, iwc.getParameter(AscertiaConstants.PARAM_VARIABLE_HASH));
+		IFrame documentFrame = new IFrame("document_view_frame", uri.getUri());
 		documentFrame.setStyleClass("pdf_frame");
 		mainDiv.add(documentFrame);
 		
@@ -182,30 +146,21 @@ public class AscertiaSigner extends Block {
 		signingLayer.setStyleClass("under_frame_layer");
 		mainDiv.add(signingLayer);
 		
-		Script script = new Script();
-		script.addScriptLine("embedAscertiaApplet('" + serverURL
-		        + goSignRootRootURI + "','" + formName + "','"
-		        + getLocalizedString("note_message", "", iwc) + "');");
-		script.addScriptLine("GoSign_SetTargetURL('" + targetURL + "');");
+		String embedAction = "embedAscertiaApplet('" + serverURL + goSignRootRootURI + "','" + formName + "','" + getLocalizedString("note_message", "", iwc) + "');";
+		mainDiv.add(PresentationUtil.getJavaScriptAction(embedAction));
+		String setTargetAction = "GoSign_SetTargetURL('" + targetURL + "');";
+		mainDiv.add(PresentationUtil.getJavaScriptAction(setTargetAction));
 		
-		BuilderService builderService = BuilderServiceFactory
-		        .getBuilderService(iwc);
-		
-		String successPath = builderService.getUriToObject(
-		    AscertiaSigningForm.class, Arrays
-		            .asList(new AdvancedProperty[] { new AdvancedProperty(
-		                    PARAMETER_ACTION, String
-		                            .valueOf(PARAMETER_SHOW_SIGNED_PDF)) }));
-		
-		script.addScriptLine("GoSign_SetResultPage('" + successPath + "');");
-		
-		mainDiv.add(script);
-		
+		BuilderService builderService = getBuilderService(iwc);
+		String successPath = builderService.getUriToObject(AscertiaSigningForm.class, Arrays.asList(
+				new AdvancedProperty(PARAMETER_ACTION, String.valueOf(PARAMETER_SHOW_SIGNED_PDF)))
+		);
+		String setSuccessAction = "GoSign_SetResultPage('" + successPath + "');";
+		mainDiv.add(PresentationUtil.getJavaScriptAction(setSuccessAction));
 		add(mainDiv);
 	}
 	
-	protected Form createForm(IWContext iwc, String documentURL)
-	        throws RemoteException {
+	protected Form createForm(IWContext iwc, String documentURL) throws RemoteException {
 		Form form = new Form();
 		form.setId(formName);
 		form.setMarkupAttribute("name", formName);
@@ -291,57 +246,31 @@ public class AscertiaSigner extends Block {
 	}
 	
 	protected void showSignedPdf(IWContext iwc) throws RemoteException {
-		
 		String serverURL = iwc.getServerURL();
-		serverURL = (serverURL.endsWith("/")) ? serverURL.substring(0,
-		    serverURL.length() - 1) : serverURL;
-		
-		Script script = new Script();
+		serverURL = (serverURL.endsWith(CoreConstants.SLASH)) ? serverURL.substring(0, serverURL.length() - 1) : serverURL;
 		
 		Layer mainDiv = new Layer();
-		
-		mainDiv.add(PresentationUtil.getJavaScriptSourceLine(iwc
-		        .getIWMainApplication().getBundle(
-		            CoreConstants.CORE_IW_BUNDLE_IDENTIFIER)
-		        .getVirtualPathWithFileNameString("iw_core.js")));
-		
-		mainDiv
-		        .add(PresentationUtil
-		                .getCssLine(
-		                    bundle
-		                            .getResourceURIWithoutContextPath("/style/ascertia.css"),
-		                    true));
-		
-		mainDiv.add(script);
-		
+		mainDiv.add(PresentationUtil.getJavaScriptSourceLine(CoreUtil.getCoreBundle().getVirtualPathWithFileNameString("iw_core.js")));
+		mainDiv.add(PresentationUtil.getCssLine(bundle.getVirtualPathWithFileNameString("style/ascertia.css"), true));
 		mainDiv.setStyleClass("main_layer");
 		
 		Layer headerDiv = new Layer();
 		headerDiv.setStyleClass("signed_success_message_layer");
-		headerDiv.add(new Heading5(getLocalizedString("signed_successfully",
-		    "Document signed successfully", iwc)));
+		headerDiv.add(new Heading5(getLocalizedString("signed_successfully", "Document signed successfully", iwc)));
 		
 		mainDiv.add(headerDiv);
 		
-		IFrame frame = new IFrame("signedDocument", iwc.getIWMainApplication()
-		        .getMediaServletURI()
-		        + "?"
-		        + MediaWritable.PRM_WRITABLE_CLASS
-		        + "="
-		        + IWMainApplication
-		                .getEncryptedClassName(AscertiaPDFPrinter.class));
+		URIUtil uri = new URIUtil(iwc.getIWMainApplication().getMediaServletURI());
+		uri.setParameter(MediaWritable.PRM_WRITABLE_CLASS, IWMainApplication.getEncryptedClassName(AscertiaPDFPrinter.class));
+		IFrame frame = new IFrame("signedDocument", uri.getUri());
 		frame.setStyleClass("pdf_frame");
 		mainDiv.add(frame);
 		
 		Layer downLoadDiv = new Layer();
 		downLoadDiv.setStyleClass("under_frame_layer");
-		
-		DownloadLink pdfLink = new DownloadLink(getLocalizedString("download",
-		    "Download", iwc));
+		DownloadLink pdfLink = new DownloadLink(getLocalizedString("download", "Download", iwc));
 		pdfLink.setMediaWriterClass(AscertiaPDFWriter.class);
-		
 		downLoadDiv.add(pdfLink);
-		
 		mainDiv.add(downLoadDiv);
 		
 		add(mainDiv);
