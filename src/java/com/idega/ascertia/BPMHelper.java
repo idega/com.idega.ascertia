@@ -57,9 +57,7 @@ public class BPMHelper {
 	        String localizedPrefix, String signaturePlaceUsed,
 	        String signatureProfileUsed) throws Exception {
 		
-		TaskInstanceW taskInstance = getBpmFactory()
-		        .getProcessManagerByTaskInstanceId(taskInstanceId)
-		        .getTaskInstance(taskInstanceId);
+		TaskInstanceW taskInstance = getBpmFactory().getTaskInstanceW(taskInstanceId);
 		
 		BinaryVariable binaryVariable = getBinaryVariable(taskInstanceId,
 		    binaryVariableHash);
@@ -156,9 +154,7 @@ public class BPMHelper {
 	        byte[] signedPDF, String fileName, String signaturePlaceUsed,
 	        String signatureProfileUsed) throws Exception {
 		
-		TaskInstanceW taskInstance = getBpmFactory()
-		        .getProcessManagerByTaskInstanceId(taskInstanceId)
-		        .getTaskInstance(taskInstanceId);
+		TaskInstanceW taskInstance = getBpmFactory().getTaskInstanceW(taskInstanceId);
 		
 		InputStream inputStream = new ByteArrayInputStream(signedPDF);
 		

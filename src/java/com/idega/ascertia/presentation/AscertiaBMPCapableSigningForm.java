@@ -15,7 +15,6 @@ import com.idega.ascertia.AscertiaData;
 import com.idega.ascertia.AscertiaPDFPrinter;
 import com.idega.block.process.variables.Variable;
 import com.idega.bpm.jsfcomponentview.BPMCapableJSFComponent;
-import com.idega.bpm.jsfcomponentview.JSFComponentView;
 import com.idega.builder.bean.AdvancedProperty;
 import com.idega.core.builder.business.BuilderService;
 import com.idega.core.builder.business.BuilderServiceFactory;
@@ -25,6 +24,7 @@ import com.idega.jbpm.exe.BPMFactory;
 import com.idega.jbpm.exe.TaskInstanceW;
 import com.idega.jbpm.variables.BinaryVariable;
 import com.idega.jbpm.variables.VariablesHandler;
+import com.idega.jbpm.view.JSFComponentView;
 import com.idega.presentation.IWBaseComponent;
 import com.idega.presentation.IWContext;
 import com.idega.presentation.Layer;
@@ -95,9 +95,7 @@ public class AscertiaBMPCapableSigningForm extends IWBaseComponent implements BP
 
 			div.add(frame);
 		} else {
-			TaskInstanceW taskInstanceW = getBpmFactory()
-			        .getProcessManagerByTaskInstanceId(view.getTaskInstanceId())
-			        .getTaskInstance(view.getTaskInstanceId());
+			TaskInstanceW taskInstanceW = getBpmFactory().getTaskInstanceW(view.getTaskInstanceId());
 
 			Variable signedVar = Variable.parseDefaultStringRepresentation(AscertiaConstants.SIGNED_VARIABLE_NAME);
 			BinaryVariable signedDocument = taskInstanceW.getAttachments(signedVar).iterator().next();
