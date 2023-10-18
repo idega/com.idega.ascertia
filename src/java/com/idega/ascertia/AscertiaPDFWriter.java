@@ -14,33 +14,37 @@ import com.idega.presentation.IWContext;
 import com.idega.util.FileUtil;
 
 public class AscertiaPDFWriter extends DownloadWriter{
-	
+
 	public static final String PARAM_CONVERSATION_ID = "conversation_id";
 
 	private static final Logger logger = Logger.getLogger(AscertiaPDFWriter.class.getName());
-	
+
 	private InputStream inputStream;
-		
+
 	@Override
 	public void init(HttpServletRequest req, IWContext iwc) {
+		if (iwc == null || !iwc.isLoggedOn()) {
+			return;
+		}
+
 		AscertiaData ascertiaData = (AscertiaData) iwc.getSession().getAttribute(AscertiaConstants.PARAM_ASCERTIA_DATA);
-		
+
 		byte[] document = ascertiaData.getByteDocument();
-		ByteArrayInputStream bais = new ByteArrayInputStream(document);	
+		ByteArrayInputStream bais = new ByteArrayInputStream(document);
 		this.inputStream = bais;
-		
+
 		setAsDownload(iwc, ascertiaData.getDocumentName(), document.length);
 	}
-	
+
 	@Override
-	public void writeTo(OutputStream streamOut) throws IOException {
+	public void writeTo(IWContext iwc, OutputStream streamOut) throws IOException {
 		if (inputStream == null) {
 			logger.log(Level.SEVERE, "Unable to get input stream");
 			return;
 		}
-		
+
 		FileUtil.streamToOutputStream(inputStream, streamOut);
-		
+
 		streamOut.flush();
 		streamOut.close();
 	}

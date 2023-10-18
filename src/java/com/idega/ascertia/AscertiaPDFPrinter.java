@@ -26,22 +26,27 @@ import com.idega.util.expression.ELUtil;
 public class AscertiaPDFPrinter implements MediaWritable {
 
 	private static final Logger logger = Logger.getLogger(AscertiaPDFWriter.class.getName());
-	
+
 	private InputStream inputStream;
-	
+
 	@Autowired
 	private VariablesHandler variablesHandler;
-	
+
+	@Override
 	public String getMimeType() {
 		return MimeTypeUtil.MIME_TYPE_PDF_1;
 	}
-	
+
 	@Override
 	public void init(HttpServletRequest req, IWContext iwc) {
+		if (iwc == null || !iwc.isLoggedOn()) {
+			return;
+		}
+
 		AscertiaData ascertiaData = (AscertiaData) iwc.getSession().getAttribute(AscertiaConstants.PARAM_ASCERTIA_DATA);
 		String taskIdStr = iwc.getParameter(AscertiaConstants.PARAM_TASK_ID);
 		String variableHashStr = iwc.getParameter(AscertiaConstants.PARAM_VARIABLE_HASH);
-		
+
 		byte[] document = null;
 		if (taskIdStr != null && variableHashStr != null) {
 			Integer variableHash = Integer.valueOf(variableHashStr);
@@ -59,7 +64,7 @@ public class AscertiaPDFPrinter implements MediaWritable {
 				IOUtil.close(baos);
 				return;
 			}
-			
+
 			document = baos.toByteArray();
 		} else if (ascertiaData != null) {
 			document = ascertiaData.getByteDocument();
@@ -67,31 +72,31 @@ public class AscertiaPDFPrinter implements MediaWritable {
 		if (document == null) {
 			logger.warning("Document is undefined!");
 		}
-		ByteArrayInputStream bais = new ByteArrayInputStream(document);	
+		ByteArrayInputStream bais = new ByteArrayInputStream(document);
 		this.inputStream = bais;
 		setOutpusAsPDF(iwc, document.length);
 	}
-	
+
 	@Override
-	public void writeTo(OutputStream streamOut) throws IOException {
+	public void writeTo(IWContext iwc, OutputStream streamOut) throws IOException {
 		if (inputStream == null) {
 			logger.severe("Unable to get input stream");
 			return;
 		}
-		
+
 		FileUtil.streamToOutputStream(inputStream, streamOut);
-		
+
 		streamOut.flush();
 		streamOut.close();
 	}
-	
+
 	private void setOutpusAsPDF(IWContext iwc, int fileLength) {
 		iwc.getResponse().setHeader("Content-Disposition", "inline");
 		if (fileLength > 0) {
 			iwc.getResponse().setContentLength(fileLength);
 		}
 	}
-	
+
 	private BinaryVariable getBinVar(VariablesHandler variablesHandler, long taskInstanceId, Integer binaryVariableHash) {
 		List<BinaryVariable> variables = variablesHandler.resolveBinaryVariables(taskInstanceId);
 
